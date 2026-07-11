@@ -465,7 +465,7 @@ else:
         if seleccion == "Inicio":
             st.subheader(f"Hola, {st.session_state.usuario_nombre}")
             st.write("Bienvenido al sistema de gestión de transporte de materiales livianos.")
-            st.image("/modulos/Flete_Flash_Logo_2.png")
+            st.image("modulos/Flete_Flash_Logo_2.png")
             st.info("Selecciona una opción en el menú izquierdo para empezar a trabajar.")
         elif seleccion == "Gestión de Clientes":
             mostrar_modulo_clientes()
