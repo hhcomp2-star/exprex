@@ -84,6 +84,18 @@ def sincronizar_tasa_bcv():
     cursor = conn.cursor()
     tasa_bcv_internet = obtener_tasa_bcv_en_vivo()
     
+    # 1. Asegurar que la tabla exista
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS configuracion (
+            clave TEXT PRIMARY KEY,
+            valor TEXT
+        )
+    """)
+
+    # 2. Asegurar que exista el registro de la tasa para poder actualizarlo
+    cursor.execute("INSERT OR IGNORE INTO configuracion (clave, valor) VALUES ('tasa_bcv', '0')")
+
+
     if tasa_bcv_internet:
         cursor.execute("UPDATE configuracion SET valor = ? WHERE clave = 'tasa_bcv'", (str(tasa_bcv_internet),))
         conn.commit()
