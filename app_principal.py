@@ -216,7 +216,8 @@ def verificar_usuario(cedula, contrasena):
             cedula TEXT PRIMARY KEY,
             contrasena TEXT,
             nombre TEXT,
-            rol TEXT
+            rol TEXT,
+            activo TEXT
         )
     """)
 
@@ -227,7 +228,7 @@ def verificar_usuario(cedula, contrasena):
     # 3. Insertar un usuario inicial si la tabla está vacía
     cursor.execute("""
         INSERT OR IGNORE INTO usuarios (cedula, contrasena, nombre, rol) 
-        VALUES (?, ?, ?,'Administrador')
+        VALUES (?, ?, ?,'Administrador', 'Sí')
     """, (admin_cedula, admin_contrasena, admin_nombre))
 
     # Evaluamos que coincida la clave y que el trabajador esté ACTIVO ('Sí')
