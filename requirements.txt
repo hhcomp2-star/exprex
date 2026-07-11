@@ -2,3 +2,4 @@ beautifulsoup4
 requests
 psycopg2-binary
 streamlit-cookies-manager
+streamlit-option-menu
