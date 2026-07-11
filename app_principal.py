@@ -209,6 +209,27 @@ if "tasa_bcv" not in st.session_state:
 def verificar_usuario(cedula, contrasena):
     conexion = sqlite3.connect('exprex.db')
     cursor = conexion.cursor()
+
+    # 1. Asegurar que la tabla de usuarios exista
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS usuarios (
+            cedula TEXT PRIMARY KEY,
+            contrasena TEXT,
+            nombre TEXT,
+            rol TEXT
+        )
+    """)
+
+    admin_cedula = st.secrets["admin_user"]["cedula"]
+    admin_contrasena = st.secrets["admin_user"]["contrasena"]
+    admin_nombre = st.secrets["admin_user"]["nombre"]
+
+    # 3. Insertar un usuario inicial si la tabla está vacía
+    cursor.execute("""
+        INSERT OR IGNORE INTO usuarios (cedula, contrasena, nombre, rol) 
+        VALUES (?, ?, ?,'Administrador')
+    """, (admin_cedula, admin_contrasena, admin_nombre))
+
     # Evaluamos que coincida la clave y que el trabajador esté ACTIVO ('Sí')
     cursor.execute('''
         SELECT cedula, nombre, rol FROM usuarios 
