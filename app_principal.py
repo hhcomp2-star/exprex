@@ -28,40 +28,6 @@ from modulos.rec_cont import mostrar_modulo_recuperar_contrasena
 from modulos.nvo_reg import mostrar_modulo_registro
 from modulos.utils import contar_viajes_solicitados_global, reproducir_alerta_victoria
 
-def inicializar_sistema():
-    conn = sqlite3.connect("exprex.db") # Tu base de datos real
-    cursor = conn.cursor()
-
-    # 1. Asegurar la tabla con su estructura correcta
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS usuarios (
-            cedula TEXT PRIMARY KEY,
-            contrasena TEXT,
-            nombre TEXT,
-            rol TEXT,
-            activo TEXT
-        )
-    """)
-
-    # 2. Intentar registrar al administrador de forma segura leyendo los Secrets web
-    try:
-        admin_cedula = st.secrets["admin_user"]["cedula"]
-        admin_contrasena = st.secrets["admin_user"]["contrasena"]
-        admin_nombre = st.secrets["admin_user"]["nombre"]
-
-        cursor.execute("""
-            INSERT OR IGNORE INTO usuarios (cedula, contrasena, nombre, rol, activo) 
-            VALUES (?, ?, ?, 'Administrador', 'Sí')
-        """, (admin_cedula, admin_contrasena, admin_nombre))
-    except Exception as e:
-        # Si por algún motivo Streamlit oculta los secretos en un clic, el sistema no se cae
-        pass
-
-    conn.commit()
-    conn.close()
-
-# Llamamos a la inicialización al arrancar
-inicializar_sistema()
 
 if "vista_login" not in st.session_state:
     st.session_state["vista_login"] = "login"
