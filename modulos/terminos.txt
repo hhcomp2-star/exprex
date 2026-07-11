@@ -1,0 +1,77 @@
+📜 TÉRMINOS Y CONDICIONES DE USO DE LA PLATAFORMA EXPREX LOGÍSTICA
+Última actualización: Junio, 2026
+
+Bienvenido a la plataforma digital de ExpreX Logística (en adelante, "la Aplicación" o "la Empresa"). Al registrarse, acceder o utilizar nuestro sistema de gestión de fletes y transporte, usted (en adelante, "el Usuario" o "el Conductor") acepta de manera expresa, voluntaria e incondicional los presentes Términos y Condiciones de Uso. Si no está de acuerdo con ellos, deberá abstenerse de utilizar la plataforma.
+
+PRIMERA: OBJETO DE LA PLATAFORMA
+La Aplicación es una herramienta tecnológica privada de uso interno y exclusivo diseñada para coordinar, registrar, auditar y liquidar servicios de transporte de carga y fletes a nivel local y nacional. El acceso está restringido únicamente a personal autorizado y conductores previamente registrados.
+
+SEGUNDA: REGISTRO, CUENTA Y SEGURIDAD
+Identificación Única: El Usuario se registra utilizando su número de Cédula de Identidad o RIF como identificador único en el sistema.
+
+Carácter Intransferible: La cuenta de acceso y la contraseña creada por el Usuario o el Conductor son de uso estrictamente personal y confidencial. Queda terminantemente prohibido ceder, transferir o permitir el uso de la cuenta a terceras personas. Cualquier registro de viaje o movimiento realizado desde su cuenta se considerará efectuado por el titular de la misma.
+
+Veracidad de la Información: El Usuario o el Conductor se compromete a suministrar datos civiles, de contacto y financieros completamente verídicos, exactos y actualizados.
+
+TERCERA: CONDICIONES OPERATIVAS DE LOS VIAJES
+Registro de Despacho: Cada flete asignado deberá registrarse de forma cronológica y obligatoria en el monitor de la Aplicación, especificando origen, destino, tipo de material, distancia en kilómetros y datos del cliente solicitante.
+
+Evidencia de Entrega (Cierre de Flete): Al concretar la entrega de la carga en el destino final, el Conductor está obligado a reportar el estatus como "Entregado" y adjuntar de manera obligatoria una fotografía legible de la guía, factura o nota de entrega debidamente firmada y sellada por el emisor y firmada receptor de la carga como soporte físico inalterable.
+
+CUARTA: ESQUEMA DE TARIFAS, LIQUIDACIONES Y COMISIONES
+El sistema procesará de forma automática los importes netos y las comisiones correspondientes basándose en las directrices de negocio de ExpreX:
+
+Descuento Operativo: A todo monto de flete bruto se le aplicará un descuento base estipulado del quince por ciento (15%) para la obtención del Importe Neto en USD.
+
+Vehículo Propio del Chofer: Si el vehículo conducido está registrado a nombre o bajo propiedad del Chofer, la tasa de asignación de pago para el chofer será del setenta y cinco por ciento (75%) sobre el Importe Neto.
+
+Vehículo Tercero / No Propio o de la Empresa: Si el vehículo es de propiedad de la empresa o de un tercero asociado, la tasa de asignación de pago para el chofer será del treinta y siete por ciento (30%) sobre el Importe Neto.
+
+Cuentas Bancarias: Las liquidaciones se realizarán única y exclusivamente en la cuenta bancaria registrada por el Conductor en su ficha técnica del sistema.
+
+QUINTA: SUSPENSIÓN Y DESACTIVACIÓN DE CUENTAS
+ExpreX Logística se reserva el derecho de suspender temporalmente o desactivar de forma definitiva ("Fecha de Baja") a cualquier Usuario del sistema, sin que esto genere derecho a indemnización alguna, ante las siguientes causales:
+
+Suministro de información falsa, alterada o fraudulenta (en datos personales o kilómetros de viaje).
+
+Manipulación de fotos de evidencia o reportes de entrega falsos.
+
+Uso indebido de la plataforma que ponga en riesgo la seguridad informática del servidor.
+
+🔒 POLÍTICA DE PRIVACIDAD Y PROTECCIÓN DE DATOS DE EXPREX LOGÍSTICA
+Última actualización: Julio, 2026
+
+En ExpreX Logística, nos tomamos muy en serio la seguridad y la privacidad de la información de nuestros clientes, trabajadores, aliados y conductores. Esta Política de Privacidad describe cómo recolectamos, almacenamos, protegemos y utilizamos sus datos personales dentro de nuestra aplicación de transporte.
+
+1. DATOS QUE RECOLECTAMOS
+Para el correcto funcionamiento de la plataforma operativa y la gestión de nóminas, recolectamos los siguientes datos:
+
+Datos de Identidad: Nombre completo y Cédula de Identidad.
+
+Datos de Contacto: Número telefónico, dirección residencial y correo electrónico.
+
+Datos Operativos e Historial: Coordenadas de geolocalización (puntos de origen y entrega), registros de distancia (KM), tipo de carga transportada y fotografías de evidencias físicas de entrega de mercancía.
+
+Datos Financieros (Nómina): Nombre del banco y número de cuenta bancaria de quienes sea necesario conocer.
+
+2. USO DE LA INFORMACIÓN
+La información recolectada por ExpreX se utiliza estrictamente para fines operativos y administrativos del negocio de transporte, específicos para:
+
+Validar el inicio de sesión seguro y verificar la identidad del personal en ruta.
+
+Asignar fletes y procesar el cálculo automatizado de rutas mediante servidores cartográficos.
+
+Calcular de forma precisa los importes netos, comisiones correspondientes de los fletes y emitir el balance de pagos.
+
+Realizar las transferencias o depósitos bancarios de nómina directamente a la cuenta del titular.
+
+Contactar al conductor en carretera ante contingencias, cambios de ruta o soporte técnico de operaciones.
+
+3. CONFIDENCIALIDAD Y NO TRANSFERENCIA DE DATOS
+ExpreX Logística garantiza que sus datos personales, financieros y operativos no serán vendidos, alquilados, intercambiados ni compartidos con terceras empresas comerciales, agencias de publicidad ni personas ajenas a la administración central de ExpreX. Los datos se manejan con estricto secreto profesional interno.
+
+4. SEGURIDAD DE LOS DATOS
+Sus datos se almacenan en una infraestructura de base de datos local y centralizada protegida mediante controles de acceso estrictos por rol (Administrador / Cliente / Conductor). Las contraseñas ingresadas se procesan de forma privada en el sistema de autenticación para evitar accesos no autorizados.
+
+5. CONSENTIMIENTO
+Al registrarse en la plataforma y marcar la casilla de aceptación, usted otorga su consentimiento expreso para el tratamiento de sus datos personales, operativos y bancarios conforme a las finalidades descritas en esta política.
