@@ -28,6 +28,41 @@ from modulos.rec_cont import mostrar_modulo_recuperar_contrasena
 from modulos.nvo_reg import mostrar_modulo_registro
 from modulos.utils import contar_viajes_solicitados_global, reproducir_alerta_victoria
 
+def inicializar_sistema():
+    conn = sqlite3.connect("exprex.db") # Tu base de datos real
+    cursor = conn.cursor()
+
+    # 1. Asegurar la tabla con su estructura correcta
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS usuarios (
+            cedula TEXT PRIMARY KEY,
+            contrasena TEXT,
+            nombre TEXT,
+            rol TEXT,
+            activo TEXT
+        )
+    """)
+
+    # 2. Intentar registrar al administrador de forma segura leyendo los Secrets web
+    try:
+        admin_cedula = st.secrets["admin_user"]["cedula"]
+        admin_contrasena = st.secrets["admin_user"]["contrasena"]
+        admin_nombre = st.secrets["admin_user"]["nombre"]
+
+        cursor.execute("""
+            INSERT OR IGNORE INTO usuarios (cedula, contrasena, nombre, rol, activo) 
+            VALUES (?, ?, ?, 'Administrador', 'Sí')
+        """, (admin_cedula, admin_contrasena, admin_nombre))
+    except Exception as e:
+        # Si por algún motivo Streamlit oculta los secretos en un clic, el sistema no se cae
+        pass
+
+    conn.commit()
+    conn.close()
+
+# Llamamos a la inicialización al arrancar
+inicializar_sistema()
+
 if "vista_login" not in st.session_state:
     st.session_state["vista_login"] = "login"
 
@@ -133,6 +168,8 @@ def sincronizar_tasa_bcv():
 #    unsafe_allow_html=True
 #)
 
+
+
 def play_alerta_sonora():
     # URL de un sonido de alerta corto (o puedes poner un archivo local en tu carpeta 'assets')
     # sonido_alerta = "https://actions.google.com/sounds/v1/alarms/beep_short.ogg"
@@ -210,28 +247,28 @@ def verificar_usuario(cedula, contrasena):
     conexion = sqlite3.connect('exprex.db')
     cursor = conexion.cursor()
 
-    cursor.execute("DROP TABLE IF EXISTS usuarios")
+    #cursor.execute("DROP TABLE IF EXISTS usuarios")
 
     # 1. Asegurar que la tabla de usuarios exista
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS usuarios (
-            cedula TEXT PRIMARY KEY,
-            contrasena TEXT,
-            nombre TEXT,
-            rol TEXT,
-            activo TEXT
-        )
-    """)
+    #cursor.execute("""
+    #    CREATE TABLE IF NOT EXISTS usuarios (
+    #        cedula TEXT PRIMARY KEY,
+    #        contrasena TEXT,
+    #        nombre TEXT,
+    #        rol TEXT,
+    #        activo TEXT
+    #    )
+    #""")
 
-    admin_cedula = st.secrets["admin_user"]["cedula"]
-    admin_contrasena = st.secrets["admin_user"]["contrasena"]
-    admin_nombre = st.secrets["admin_user"]["nombre"]
+    #admin_cedula = st.secrets["admin_user"]["cedula"]
+    #admin_contrasena = st.secrets["admin_user"]["contrasena"]
+    #admin_nombre = st.secrets["admin_user"]["nombre"]
 
     # 3. Insertar un usuario inicial si la tabla está vacía
-    cursor.execute("""
-        INSERT OR IGNORE INTO usuarios (cedula, contrasena, nombre, rol, activo) 
-        VALUES (?, ?, ?,'Administrador', 'Sí')
-    """, (admin_cedula, admin_contrasena, admin_nombre))
+    #cursor.execute("""
+    #    INSERT OR IGNORE INTO usuarios (cedula, contrasena, nombre, rol, activo) 
+    #    VALUES (?, ?, ?,'Administrador', 'Sí')
+    #""", (admin_cedula, admin_contrasena, admin_nombre))
 
     # Evaluamos que coincida la clave y que el trabajador esté ACTIVO ('Sí')
     cursor.execute('''
