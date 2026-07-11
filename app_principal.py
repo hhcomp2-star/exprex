@@ -100,26 +100,26 @@ def sincronizar_tasa_bcv():
 # ======================================================================================================
 # Función para convertir la imagen local a Base64
 # ======================================================================================================
-def get_base64_image(image_path):
-    with open(image_path, "rb") as img_file:
-        return base64.b64encode(img_file.read()).decode()
+#def get_base64_image(image_path):
+#    with open(image_path, "rb") as img_file:
+#        return base64.b64encode(img_file.read()).decode()
 
-image_base64 = get_base64_image("/modulos/textura-madera-en-negro.jpg")
+#image_base64 = get_base64_image("/modulos/textura-madera-en-negro.jpg")
 
-st.markdown(
-    f"""
-    <style>
-    .stApp {{
-        background-image: url("data:image/jpg;base64,{image_base64}");
-        background-size: cover;
-        background-position: center;
-        background-repeat: no-repeat;
-        background-attachment: fixed;
-    }}
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+#st.markdown(
+#    f"""
+#    <style>
+#    .stApp {{
+#        background-image: url("data:image/jpg;base64,{image_base64}");
+#        background-size: cover;
+#        background-position: center;
+#        background-repeat: no-repeat;
+#        background-attachment: fixed;
+#    }}
+#    </style>
+#    """,
+#    unsafe_allow_html=True
+#)
 
 def play_alerta_sonora():
     # URL de un sonido de alerta corto (o puedes poner un archivo local en tu carpeta 'assets')
