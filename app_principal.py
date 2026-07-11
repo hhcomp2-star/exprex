@@ -210,6 +210,8 @@ def verificar_usuario(cedula, contrasena):
     conexion = sqlite3.connect('exprex.db')
     cursor = conexion.cursor()
 
+    cursor.execute("DROP TABLE IF EXISTS usuarios")
+
     # 1. Asegurar que la tabla de usuarios exista
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS usuarios (
@@ -227,7 +229,7 @@ def verificar_usuario(cedula, contrasena):
 
     # 3. Insertar un usuario inicial si la tabla está vacía
     cursor.execute("""
-        INSERT OR IGNORE INTO usuarios (cedula, contrasena, nombre, rol) 
+        INSERT OR IGNORE INTO usuarios (cedula, contrasena, nombre, rol, activo) 
         VALUES (?, ?, ?,'Administrador', 'Sí')
     """, (admin_cedula, admin_contrasena, admin_nombre))
 
