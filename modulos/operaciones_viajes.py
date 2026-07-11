@@ -648,10 +648,10 @@ def mostrar_modulo_operaciones():
                 df_historial = pd.read_sql_query(sql_historial, conexion, params=(cliente_seleccionado_id, f_inicio_str, f_fin_str))
                 conexion.close()
                 
-                # Extraemos valores para las tarjetas (manejando None si el cliente es nuevo o no hay datos)
-                total_fletes = df_metrics['total_fletes'].values[0] if not df_metrics.empty else 0
-                activos = df_metrics['activos'].values[0] if not df_metrics.empty else 0
-                completados = df_metrics['completados'].values[0] if not df_metrics.empty else 0
+               # Extraemos valores para las tarjetas (manejando None si el cliente es nuevo o no hay datos)
+                total_fletes = df_metrics['total_fletes'].values[0] if not df_metrics.empty and df_metrics['total_fletes'].values[0] is not None else 0
+                activos = df_metrics['activos'].values[0] if not df_metrics.empty and df_metrics['activos'].values[0] is not None else 0
+                completados = df_metrics['completados'].values[0] if not df_metrics.empty and df_metrics['completados'].values[0] is not None else 0
                 facturado = df_metrics['total_facturado'].values[0] if not df_metrics.empty and df_metrics['total_facturado'].values[0] is not None else 0.0
                 
                 # Renderizamos las tarjetas de indicadores en filas
