@@ -104,7 +104,7 @@ def get_base64_image(image_path):
     with open(image_path, "rb") as img_file:
         return base64.b64encode(img_file.read()).decode()
 
-image_base64 = get_base64_image("/home/hector/exprex/modulos/textura-madera-en-negro.jpg")
+image_base64 = get_base64_image("/modulos/textura-madera-en-negro.jpg")
 
 st.markdown(
     f"""
@@ -125,7 +125,7 @@ def play_alerta_sonora():
     # URL de un sonido de alerta corto (o puedes poner un archivo local en tu carpeta 'assets')
     # sonido_alerta = "https://actions.google.com/sounds/v1/alarms/beep_short.ogg"
 
-    sonido_alerta = "/home/hector/exprex/fanfarria_de_victoria.mp3"
+    sonido_alerta = "fanfarria_de_victoria.mp3"
     
     js_code = f"""
     <audio autoplay>
