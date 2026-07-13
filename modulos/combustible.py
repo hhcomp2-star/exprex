@@ -52,8 +52,19 @@ def mostrar_modulo_combustible():
             with col2:
                 monto_bs = st.number_input("Monto Total en Bolívares (Bs.)", min_value=0.0, step=10.0)
                 
-                c_costo_usd = monto_bs / tasa_bcv_sistema
-                c_tasa = tasa_bcv_sistema
+                # Convertimos la tasa a flotante de forma segura
+                try:
+                    tasa_num = float(tasa_bcv_sistema)
+                except (ValueError, TypeError):
+                    tasa_num = 0.0
+
+                # Hacemos la división solo si la tasa es mayor a cero
+                if tasa_num > 0:
+                    c_costo_usd = monto_bs / tasa_num
+                else:
+                    c_costo_usd = 0.0
+                    
+                c_tasa = tasa_num
                 
                 st.number_input("Tasa BCV Aplicada (Fija)", value=c_tasa, disabled=True)
                 c_estacion = st.text_input("Estación de Servicio (Nombre/Ubicación)")
