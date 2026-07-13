@@ -1,7 +1,4 @@
-*.db
-*.db-journal
+exprex.db
 __pycache__/
+.streamlit/
 *.pyc
-.venv/
-venv/
-.env

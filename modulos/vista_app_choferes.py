@@ -16,13 +16,38 @@ try:
 except Exception as e:
     texto_legal_choferes = f"⚠️ No se pudo cargar el archivo de términos en `{ruta_terminos}`: {e}"
 
+import streamlit as st
+import sqlite3
+
+def verificar_vehiculo_propio(cedula_chofer):
+    """
+    Consulta en la tabla conductores si el vehículo es propio.
+    Retorna True si es propio ('Sí'), o False si es de la empresa ('No').
+    """
+    try:
+        conn = sqlite3.connect("exprex.db")
+        cursor = conn.cursor()
+        cursor.execute("SELECT propio FROM conductores WHERE cedula = ?", (cedula_chofer,))
+        resultado = cursor.fetchone()
+        conn.close()
+        
+        if resultado and resultado[0] == "Sí":
+            return True
+    except Exception as e:
+        print(f"⚠️ Error al verificar propiedad en tabla conductores: {e}")
+    
+    return False
+
 def renderizar_panel_conductor(cedula_conductor, personal_base_datos='exprex.db'):
 
-    st.write(f"##### Panel de Operaciones - Conductor")
+    #st.write(f"##### Panel de Operaciones - Conductor")
+
+    # Colocar aquí para la barra lateral del Chofer (se despliega de lado en el tlf)
+    tasa = st.session_state.get('tasa_bcv', '0.00')
+    st.sidebar.success(f"Tasa BCV activa: {tasa} Bs.")
 
     # Si el chofer tiene dudas de si le asignaron algo, le da un toque aquí.
     if st.button("🔄 Actualizar y Buscar Nuevos Fletes", use_container_width=True):
-        # Suponiendo que tienes la cédula del chofer logueado en el session_state
         cedula = st.session_state.get("cedula_chofer") 
 
         fletes_nuevos = contar_viajes_pendientes_chofer(cedula)
@@ -34,12 +59,17 @@ def renderizar_panel_conductor(cedula_conductor, personal_base_datos='exprex.db'
             st.info("No hay fletes nuevos asignados por ahora.")
         st.rerun()
 
-    # 📑 Pestañas móviles
-    tab_fletes, tab_combustible, tab_historial = st.tabs([
-        "🗺️ Fletes Activos", 
-        "⛽ Reportar Combustible", 
-        "📜 Historial"
-    ])
+    # 1. Validación de propiedad (la función que creamos antes)
+    es_vehiculo_propio = verificar_vehiculo_propio(cedula_conductor)
+
+    # 2. Creamos las pestañas de forma condicional para reutilizar tus variables
+    if es_vehiculo_propio:
+        # Si es propio, solo creamos 2 pestañas, y asignamos un "cascarón vació" a la de combustible
+        tab_fletes, tab_historial = st.tabs(["📋 Fletes", "📊 Historial"])
+        tab_combustible = None  # Al ser None, el bloque 'with tab_combustible' no se ejecutará
+    else:
+        # Si es de la empresa, se crean las 3 pestañas originales exactamente igual
+        tab_fletes, tab_combustible, tab_historial = st.tabs(["📋 Fletes Activos", "⛽ Reportar Combustible", "📜 Historial"])
 
     # =========================================================================
     # 📌 PESTAÑA 1: RUTAS ACTIVAS Y MAPA GPS
@@ -72,7 +102,7 @@ def renderizar_panel_conductor(cedula_conductor, personal_base_datos='exprex.db'
             st.success("😎 ¡Al día! No tienes fletes pendientes asignados en este momento.")
         else:
             dicc_viajes = {row['id_viaje']: f"Flete N° {row['id_viaje']} - {row['tipo_material']}" for _, row in df_mis_viajes.iterrows()}
-            viaje_id = st.selectbox("🔄 Selecciona el flete a ejecutar:", options=list(dicc_viajes.keys()), format_func=lambda x: dicc_viajes.get(x))
+            viaje_id = st.selectbox("🔄 Selecciona el flete a ejecutar:", options=list(dicc_viajes.keys()), format_func=lambda x: str(dicc_viajes.get(x, f"Flete N° {x}")))
 
             viaje_sel = df_mis_viajes[df_mis_viajes['id_viaje'] == viaje_id].iloc[0]
 
@@ -197,40 +227,41 @@ def renderizar_panel_conductor(cedula_conductor, personal_base_datos='exprex.db'
     # =========================================================================
     # 📌 PESTAÑA 2: REPORTAR COMBUSTIBLE
     # =========================================================================
-    with tab_combustible:
-        st.write("###### ⛽ Registro de Suministro Diésel/Gasolina")
-        
-        with st.form("form_combustible_chofer", clear_on_submit=True):
-            fecha_gasto = st.date_input("📅 Fecha del Suministro:", value=datetime.date.today())
-            litros = st.number_input("🧪 Litros Surtidos:", min_value=0.0, step=1.0)
-            monto_pagado = st.number_input("💵 Monto Total Pagado ($):", min_value=0.0, step=1.0)
-            estacion_servicio = st.text_input("🏪 Estación de Servicio o Ubicación:")
-            observaciones_comb = st.text_area("🗒️ Notas adicionales:")
+    if tab_combustible is not None:
+        with tab_combustible:
+            st.write("###### ⛽ Registro de Suministro Diésel/Gasolina")
             
-            btn_combustible = st.form_submit_button("💾 Guardar Reporte de Combustible", use_container_width=True)
-            
-        if btn_combustible:
-            if litros <= 0 or monto_pagado <= 0:
-                st.error("❌ Error: Debe ingresar valores válidos de litros y costo monetario.")
-            else:
-                try:
-                    conexion = sqlite3.connect(personal_base_datos)
-                    cursor = conexion.cursor()
-                    cursor.execute('''
-                        INSERT INTO control_combustible (cedula_conductor, fecha, litros, monto_usd, estacion, observaciones)
-                        VALUES (?, ?, ?, ?, ?, ?)
-                    ''', (cedula_conductor, str(fecha_gasto), litros, monto_pagado, estacion_servicio, observaciones_comb))
-                    conexion.commit()
-                    conexion.close()
-                    st.success("🎉 ¡Reporte de combustible guardado con éxito!")
-                except Exception as e:
-                    st.error(f"❌ Error al registrar en base de datos: {e}")
+            with st.form("form_combustible_chofer", clear_on_submit=True):
+                fecha_gasto = st.date_input("📅 Fecha del Suministro:", value=datetime.date.today())
+                litros = st.number_input("🧪 Litros Surtidos:", min_value=0.0, step=1.0)
+                monto_pagado = st.number_input("💵 Monto Total Pagado ($):", min_value=0.0, step=1.0)
+                estacion_servicio = st.text_input("🏪 Estación de Servicio o Ubicación:")
+                observaciones_comb = st.text_area("🗒️ Notas adicionales:")
+                
+                btn_combustible = st.form_submit_button("💾 Guardar Reporte de Combustible", use_container_width=True)
+                
+            if btn_combustible:
+                if litros <= 0 or monto_pagado <= 0:
+                    st.error("❌ Error: Debe ingresar valores válidos de litros y costo monetario.")
+                else:
+                    try:
+                        conexion = sqlite3.connect(personal_base_datos)
+                        cursor = conexion.cursor()
+                        cursor.execute('''
+                            INSERT INTO control_combustible (cedula_conductor, fecha, litros, monto_usd, estacion, observaciones)
+                            VALUES (?, ?, ?, ?, ?, ?)
+                        ''', (cedula_conductor, str(fecha_gasto), litros, monto_pagado, estacion_servicio, observaciones_comb))
+                        conexion.commit()
+                        conexion.close()
+                        st.success("🎉 ¡Reporte de combustible guardado con éxito!")
+                    except Exception as e:
+                        st.error(f"❌ Error al registrar en base de datos: {e}")
 
-        # 🔄 BOTÓN DE RETORNO AL MENÚ PRINCIPAL
-        st.write("---")
-        if st.button("🏠 Volver al Menú Principal", key="btn_home_comb", use_container_width=True):
-            st.session_state["chofer_pagina"] = "Menu Principal"
-            st.rerun()
+            # 🔄 BOTÓN DE RETORNO AL MENÚ PRINCIPAL
+            st.write("---")
+            if st.button("🏠 Volver al Menú Principal", key="btn_home_comb", use_container_width=True):
+                st.session_state["chofer_pagina"] = "Menu Principal"
+                st.rerun()
 
     # =========================================================================
     # 📌 PESTAÑA 3: HISTORIAL DE FLETES (FILTRADO POR MESES Y CABECERAS LIMPIAS)
@@ -265,8 +296,14 @@ def renderizar_panel_conductor(cedula_conductor, personal_base_datos='exprex.db'
         mes_seleccionado = st.selectbox(
             "📅 Seleccione el mes a consultar:",
             options=opciones_meses,
-            format_func=lambda x: f"{meses_dicc[x[1]]} {x[0]}"
+            format_func=lambda x: f"{meses_dicc[x[1]]} {x[0]}" if x is not None else ""
         )
+        
+        # 💡 CONTROL CRÍTICO: Si no hay opciones, evitamos que rompa la app
+        if mes_seleccionado is None:
+            #import datetime
+            hoy = datetime.date.today()
+            mes_seleccionado = (hoy.year, hoy.month)
         
         # Calculamos la fecha de inicio y fin del mes seleccionado para el SQL
         ano_sel, mes_sel = mes_seleccionado
@@ -327,7 +364,7 @@ def renderizar_panel_conductor(cedula_conductor, personal_base_datos='exprex.db'
             id_historial_sel = st.selectbox(
                 "Seleccione un flete pasado para ver detalles:", 
                 options=list(dicc_historial.keys()),
-                format_func=lambda x: dicc_historial.get(x)
+                format_func=lambda x: str(dicc_historial.get(x, f"Flete N° {x}"))
             )
             
             if id_historial_sel:
@@ -393,8 +430,17 @@ def renderizar_panel_conductor(cedula_conductor, personal_base_datos='exprex.db'
         with st.expander("📄 Términos y Condiciones", expanded=False):
             # Mostramos el contenido exacto del archivo txt en pantalla
             st.markdown(texto_legal_choferes)
-            
-        st.caption("ExpreX Choferes v1.4.0 • 🔒 Local Safe")
+        st.markdown("---")    
+        if st.sidebar.button("🚪 Cerrar Sesión", use_container_width=True):
+            st.session_state.autenticado = False
+            st.session_state.usuario_cedula = ""
+            st.session_state.usuario_nombre = ""
+            st.session_state.usuario_rol = ""
+            st.session_state.cliente_id = None
+            st.session_state.vista_login = "login"
+            st.rerun()
+        st.markdown("---")
+        st.caption("ExpreX Choferes v1.6.1 • 🔒 Local Safe")
 
 # ==========================================================================================================
 

@@ -7,7 +7,7 @@ def reproducir_alerta_victoria():
     Inyecta un componente de audio HTML oculto para reproducir la fanfarria
     de victoria en el navegador del usuario (PC o Celular).
     """
-    ruta_sonido = "/home/hector/exprex/tono_alerta_de_app.mp3"
+    ruta_sonido = "/exprex/tono_alerta_de_app.mp3"
     try:
         with open(ruta_sonido, "rb") as f:
             datos_audio = f.read()
@@ -52,4 +52,5 @@ def contar_viajes_pendientes_chofer(cedula_chofer):
     """, (cedula_chofer,))
     cantidad = cursor.fetchone()[0]
     conexion.close()
+    reproducir_alerta_victoria()
     return cantidad

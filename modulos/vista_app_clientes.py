@@ -143,11 +143,15 @@ def mostrar_interfaz_cliente():
         st.info("Complete los detalles de la carga para que nuestro equipo operativo valide y asigne la unidad.")
         
         # 1. Recuperamos las sucursales de origen del cliente
+        # 1. Recuperamos las sucursales de origen del cliente
         try:
+            # 💡 Blindaje: Si id_cliente es None, le asignamos 0 o un valor vacío para que no rompa el tipado
+            id_cliente_seguro = id_cliente if id_cliente is not None else 0
+
             conexion = sqlite3.connect('exprex.db')
             df_sucursales = pd.read_sql_query(
                 "SELECT id_sucursal, nombre_agencia, ciudad FROM sucursales WHERE id_cliente = ? AND activa = 'Sí'", 
-                conexion, params=(id_cliente,)
+                conexion, params=(id_cliente_seguro,)
             )
             conexion.close()
         except Exception:
@@ -201,26 +205,26 @@ def mostrar_interfaz_cliente():
                 observaciones = st.text_area("📝 Observaciones o Instrucciones Especiales:", value=st.session_state.tmp_observaciones, placeholder="Ej: Llevar precintos de seguridad, despachar en horario de la mañana...")
                 
                 st.markdown("---")
-                boton_solicitar = st.form_submit_button("🚀 Enviar Solicitud de Flete", use_container_width=True)
+                boton_solicitar = st.form_submit_button("🚀 Enviar Solicitud de Flete", use_container_width=True, type="primary")
                 
                 if boton_solicitar:
                     # 🎯 RESPALDO INMEDIATO en la memoria temporal antes de cualquier validación
-                    st.session_state.tmp_destino = direccion_destino.strip()
+                    st.session_state.tmp_destino = str(direccion_destino or "").strip()
                     st.session_state.tmp_material = tipo_material
-                    st.session_state.tmp_solicitante = solicitante_nombre.strip()
-                    st.session_state.tmp_contacto = persona_contacto.strip()
+                    st.session_state.tmp_solicitante = str(solicitante_nombre or "").strip()
+                    st.session_state.tmp_contacto = str(persona_contacto or "").strip()
                     st.session_state.tmp_unidad = tipo_unidad_requerida
                     st.session_state.tmp_viaje = tipo_viaje
                     st.session_state.tmp_peso = peso_carga_kg
-                    st.session_state.tmp_pedido = num_pedido.strip()
-                    st.session_state.tmp_telefono = solicitante_telefono.strip()
-                    st.session_state.tmp_telefono_contacto = telefono_contacto.strip()
-                    st.session_state.tmp_observaciones = observaciones.strip()
+                    st.session_state.tmp_pedido = str(num_pedido or "").strip()
+                    st.session_state.tmp_telefono = str(solicitante_telefono or "").strip()
+                    st.session_state.tmp_telefono_contacto = str(telefono_contacto or "").strip()
+                    st.session_state.tmp_observaciones = (observaciones or "").strip()
 
                     # 🛑 VALIDACIONES COMPLETAS (No entran a la base de datos si fallan)
-                    if not direccion_destino.strip():
+                    if not str(direccion_destino or "").strip():
                         st.error("❌ Por favor, especifique la dirección de destino final.")
-                    elif not solicitante_nombre.strip() or not solicitante_telefono.strip():
+                    elif not str(solicitante_nombre or "").strip() or not str(solicitante_telefono or "").strip():
                         st.error("❌ Por favor, indique el nombre y teléfono de la persona que solicita el servicio.")
                     elif credito_disponible <= 0:
                         st.error("⚠️ Solicitud No Registrada: Su empresa ha excedido su límite de crédito disponible. Comuníquese con la Administración de ExpreX.")
@@ -318,13 +322,20 @@ def mostrar_interfaz_cliente():
             
         #st.write(list(st.session_state.keys()))
 
+        # Formateamos el selector para que el chofer vea "Julio 2026", "Junio 2026", etc.
         mes_seleccionado = st.selectbox(
             "📅 Seleccione el mes a consultar:",
             options=opciones_meses,
-            format_func=lambda x: f"{meses_dicc[x[1]]} {x[0]}",
-            key="filtro_mes_cliente" # Key única para evitar conflictos en Streamlit
+            format_func=lambda x: f"{meses_dicc[x[1]]} {x[0]}" if x is not None else ""
         )
         
+        # 💡 CONTROL CRÍTICO: Si no hay opciones, evitamos que rompa la app
+        if mes_seleccionado is None:
+            import datetime
+            hoy = datetime.date.today()
+            mes_seleccionado = (hoy.year, hoy.month)
+        
+        # Calculamos la fecha de inicio y fin del mes seleccionado para el SQL
         ano_sel, mes_sel = mes_seleccionado
         f_inicio_mes = f"{ano_sel}-{mes_sel:02d}-01"
         if mes_sel == 12:
@@ -335,7 +346,7 @@ def mostrar_interfaz_cliente():
         try:
             conexion = sqlite3.connect('exprex.db')
             
-            # 🎯 SOLUCIÓN DEFINITIVA: Filtramos el mes comparando directamente 
+            # Filtramos el mes comparando directamente 
             # las cadenas de texto (año y mes) del selector con la columna fecha_despacho.
             # Además, incluimos TODOS los estatus para que puedas ver el historial completo del mes.
             filtro_mes_texto = f"{ano_sel}-{mes_sel:02d}-%"
@@ -387,7 +398,7 @@ def mostrar_interfaz_cliente():
             id_historial_sel = st.selectbox(
                 "Seleccione un flete pasado para ver detalles:", 
                 options=list(dicc_historial.keys()),
-                format_func=lambda x: dicc_historial.get(x),
+                format_func=lambda x: str(dicc_historial.get(x, f"Flete N° {x}")),
                 key="detalle_flete_cliente"
             )
             
@@ -558,7 +569,7 @@ def mostrar_interfaz_cliente():
             """)
             
             # Pie de página sutil con la versión que congelamos con Engrampa
-            st.caption("ExpreX v1.2.0 • 2026 🚛")
+            st.caption("ExpreX v1.6.3 • 2026 🚛")
 
         # --- OPCIÓN 2: MARCO LEGAL Y OPERATIVO ---
         with st.expander("📄 Marco Legal y Políticas", expanded=False):
@@ -594,6 +605,15 @@ def mostrar_interfaz_cliente():
         with st.expander("📄 Términos y Condiciones", expanded=False):
             # Mostramos el contenido exacto del archivo txt en pantalla
             st.markdown(texto_legal_choferes)
-            
+
+        if st.sidebar.button("🚪 Cerrar Sesión", use_container_width=True):
+            st.session_state.autenticado = False
+            st.session_state.usuario_cedula = ""
+            st.session_state.usuario_nombre = ""
+            st.session_state.usuario_rol = ""
+            st.session_state.cliente_id = None
+            st.session_state.vista_login = "login"
+            st.rerun()
+
         # Pequeño pie de página unificado abajo de los dos módulos
-        st.caption("ExpreX Logística v1.4.0 • 🔒 Conexión Segura")
+        st.caption("ExpreX Logística v1.6.3 • 🔒 Conexión Segura")
