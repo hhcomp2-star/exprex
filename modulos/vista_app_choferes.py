@@ -1,11 +1,12 @@
 import streamlit as st
-import sqlite3
 import pandas as pd
-import datetime
 import datetime as dt
 import time
 import os
 from modulos.utils import contar_viajes_pendientes_chofer, reproducir_alerta_victoria
+
+# 🛠️ IMPORTAMOS TU FUNCIÓN CENTRALIZADA DE CONEXIÓN
+from utils import obtener_conexion_db 
 
 # --- CARGAR TEXTO LEGAL DESDE LA CARPETA MODULOS ---
 ruta_terminos = os.path.join("modulos", "terminos.txt")
@@ -16,21 +17,20 @@ try:
 except Exception as e:
     texto_legal_choferes = f"⚠️ No se pudo cargar el archivo de términos en `{ruta_terminos}`: {e}"
 
-import streamlit as st
-import sqlite3
 
 def verificar_vehiculo_propio(cedula_chofer):
     """
-    Consulta en la tabla conductores si el vehículo es propio.
+    Consulta en PostgreSQL (Railway) si el vehículo del conductor es propio.
     Retorna True si es propio ('Sí'), o False si es de la empresa ('No').
     """
     try:
-        conn = sqlite3.connect("exprex.db")
-        cursor = conn.cursor()
-        cursor.execute("SELECT propio FROM conductores WHERE cedula = ?", (cedula_chofer,))
-        resultado = cursor.fetchone()
-        conn.close()
-        
+        # MIGRADO A POSTGRESQL
+        with obtener_conexion_db() as conn:
+            with conn.cursor() as cursor:
+                # En Postgres usamos %s en lugar de ? para los parámetros
+                cursor.execute("SELECT propio FROM conductores WHERE cedula = %s", (cedula_chofer,))
+                resultado = cursor.fetchone()
+                
         if resultado and resultado[0] == "Sí":
             return True
     except Exception as e:
@@ -38,9 +38,9 @@ def verificar_vehiculo_propio(cedula_chofer):
     
     return False
 
-def renderizar_panel_conductor(cedula_conductor, personal_base_datos='exprex.db'):
 
-    #st.write(f"##### Panel de Operaciones - Conductor")
+def renderizar_panel_conductor(cedula_conductor):
+    # Nota: Quitamos el parámetro personal_base_datos='exprex.db' porque ahora va a la nube
 
     # Colocar aquí para la barra lateral del Chofer (se despliega de lado en el tlf)
     tasa = st.session_state.get('tasa_bcv', '0.00')
@@ -59,12 +59,12 @@ def renderizar_panel_conductor(cedula_conductor, personal_base_datos='exprex.db'
             st.info("No hay fletes nuevos asignados por ahora.")
         st.rerun()
 
-    # 1. Validación de propiedad (la función que creamos antes)
+    # 1. Validación de propiedad (PostgreSQL)
     es_vehiculo_propio = verificar_vehiculo_propio(cedula_conductor)
 
     # 2. Creamos las pestañas de forma condicional para reutilizar tus variables
     if es_vehiculo_propio:
-        # Si es propio, solo creamos 2 pestañas, y asignamos un "cascarón vació" a la de combustible
+        # Si es propio, solo creamos 2 pestañas, y asignamos un "cascarón vacío" a la de combustible
         tab_fletes, tab_historial = st.tabs(["📋 Fletes", "📊 Historial"])
         tab_combustible = None  # Al ser None, el bloque 'with tab_combustible' no se ejecutará
     else:
@@ -76,24 +76,26 @@ def renderizar_panel_conductor(cedula_conductor, personal_base_datos='exprex.db'
     # =========================================================================
     with tab_fletes:
 
+        df_mis_viajes = pd.DataFrame()
         try:
-            conexion = sqlite3.connect(personal_base_datos)
-            df_mis_viajes = pd.read_sql_query('''
-                SELECT v.id_viaje, v.cliente_solicitante, v.origen, v.destino, v.tipo_viaje,
-                        v.distancia_km, 
-                       v.peso_carga_kg, v.tipo_material, v.estatus_viaje, v.num_pedido,
-                       s.latitud AS lat_origen, s.longitud AS lon_origen,
-                       v.latitud_entrega AS lat_destino, v.longitud_entrega AS lon_destino,
-                        v.persona_contacto_entrega, v.telefono_contacto_entrega,
-                       c.razon_social AS empresa_cliente -- 🎯 TRUCO: Traemos la empresa jurídica real
-                FROM viajes v
-                LEFT JOIN sucursales s ON v.origen = s.nombre_agencia
-                LEFT JOIN clientes c ON v.id_cliente = c.id_cliente -- 🎯 UNIÓN: Conectamos con clientes
-                WHERE v.cedula_conductor = ? 
-                  AND v.estatus_viaje IN ('Por Salir', 'En Ruta')
-                ORDER BY v.id_viaje DESC
-            ''', conexion, params=(cedula_conductor,))
-            conexion.close()
+            # 🛠️ MIGRADO A POSTGRESQL (RAILWAY)
+            with obtener_conexion_db() as conexion:
+                # Cambiamos el marcador '?' por '%s' para PostgreSQL
+                sql_viajes = '''
+                    SELECT v.id_viaje, v.cliente_solicitante, v.origen, v.destino, v.tipo_viaje,
+                           v.distancia_km, v.peso_carga_kg, v.tipo_material, v.estatus_viaje, v.num_pedido,
+                           s.latitud AS lat_origen, s.longitud AS lon_origen,
+                           v.latitud_entrega AS lat_destino, v.longitud_entrega AS lon_destino,
+                           v.persona_contacto_entrega, v.telefono_contacto_entrega,
+                           c.razon_social AS empresa_cliente 
+                    FROM viajes v
+                    LEFT JOIN sucursales s ON v.origen = s.nombre_agencia
+                    LEFT JOIN clientes c ON v.id_cliente = c.id_cliente 
+                    WHERE v.cedula_conductor = %s 
+                      AND v.estatus_viaje IN ('Por Salir', 'En Ruta')
+                    ORDER BY v.id_viaje DESC
+                '''
+                df_mis_viajes = pd.read_sql_query(sql_viajes, conexion, params=(cedula_conductor,))
         except Exception as e:
             st.error(f"❌ Error al cargar las rutas con coordenadas: {e}")
             df_mis_viajes = pd.DataFrame()
@@ -123,16 +125,22 @@ def renderizar_panel_conductor(cedula_conductor, personal_base_datos='exprex.db'
 
             st.write("")
 
-            # 🎯 La validación ideal definitiva:
-            if pd.notna(viaje_sel['lat_origen']) and pd.notna(viaje_sel['lon_origen']) and viaje_sel['lat_origen'] != 0 and viaje_sel['lon_origen'] != 0:
-                origen_param = f"{viaje_sel['lat_origen']},{viaje_sel['lon_origen']}"
-            else:
-                origen_param = viaje_sel['origen'].replace(" ", "+")
+            # 🎯 Conversión segura a numérico para evitar conflictos de tipo de datos en las coordenadas
+            lat_orig = pd.to_numeric(viaje_sel['lat_origen'], errors='coerce')
+            lon_orig = pd.to_numeric(viaje_sel['lon_origen'], errors='coerce')
+            lat_dest = pd.to_numeric(viaje_sel['lat_destino'], errors='coerce')
+            lon_dest = pd.to_numeric(viaje_sel['lon_destino'], errors='coerce')
 
-            if pd.notna(viaje_sel['lat_destino']) and pd.notna(viaje_sel['lon_destino']) and viaje_sel['lat_destino'] != 0 and viaje_sel['lon_destino'] != 0:
-                destino_param = f"{viaje_sel['lat_destino']},{viaje_sel['lon_destino']}"
+            # Validación ideal definitiva adaptada:
+            if pd.notna(lat_orig) and pd.notna(lon_orig) and lat_orig != 0 and lon_orig != 0:
+                origen_param = f"{lat_orig},{lon_orig}"
             else:
-                destino_param = viaje_sel['destino'].replace(" ", "+")
+                origen_param = str(viaje_sel['origen']).replace(" ", "+")
+
+            if pd.notna(lat_dest) and pd.notna(lon_dest) and lat_dest != 0 and lon_dest != 0:
+                destino_param = f"{lat_dest},{lon_dest}"
+            else:
+                destino_param = str(viaje_sel['destino']).replace(" ", "+")
             
             url_navegacion = f"https://www.google.com/maps/dir/?api=1&origin={origen_param}&destination={destino_param}&travelmode=driving"
 
@@ -146,14 +154,15 @@ def renderizar_panel_conductor(cedula_conductor, personal_base_datos='exprex.db'
             # 🔄 FUENTE DE VERDAD: CONSULTA DIRECTA (IGUAL QUE EN OPERACIONES)
             # =========================================================================
             try:
-                conexion = sqlite3.connect(personal_base_datos)
-                conexion.row_factory = sqlite3.Row  
-                cursor = conexion.cursor()
-                cursor.execute("SELECT estatus_viaje FROM viajes WHERE id_viaje = ?", (viaje_id,))
-                registro = cursor.fetchone()
-                conexion.close()
+                # 🛠️ MIGRADO A POSTGRESQL (RAILWAY)
+                with obtener_conexion_db() as conexion:
+                    with conexion.cursor() as cursor:
+                        # Usamos %s en lugar de ? para la consulta
+                        cursor.execute("SELECT estatus_viaje FROM viajes WHERE id_viaje = %s", (viaje_id,))
+                        registro = cursor.fetchone()
                 
-                estatus_actual = registro['estatus_viaje'] if registro else 'Por Salir'
+                # En Postgres con cursor estándar, el resultado viene como tupla indexada
+                estatus_actual = registro[0] if registro else 'Por Salir'
             except Exception as e:
                 st.error(f"❌ Error de lectura en BD: {e}")
                 estatus_actual = 'Por Salir'
@@ -171,11 +180,14 @@ def renderizar_panel_conductor(cedula_conductor, personal_base_datos='exprex.db'
                         st.warning("📋 El flete está asignado y listo en andén. Debe iniciar el recorrido.")
                         if st.button("🚛 Iniciar Viaje ('En Ruta')", key=f"btn_iniciar_{viaje_id}", use_container_width=True):
                             try:
-                                conexion = sqlite3.connect(personal_base_datos)
-                                cursor = conexion.cursor()
-                                cursor.execute("UPDATE viajes SET estatus_viaje = 'En Ruta' WHERE id_viaje = ?", (viaje_id,))
-                                conexion.commit()
-                                conexion.close()
+                                # 🛠️ MIGRADO A POSTGRESQL (RAILWAY)
+                                with obtener_conexion_db() as conexion:
+                                    with conexion.cursor() as cursor:
+                                        cursor.execute(
+                                            "UPDATE viajes SET estatus_viaje = 'En Ruta' WHERE id_viaje = %s", 
+                                            (viaje_id,)
+                                        )
+                                    conexion.commit()
                                 st.rerun()
                             except Exception as e:
                                 st.error(f"❌ Error al iniciar: {e}")
@@ -212,8 +224,11 @@ def renderizar_panel_conductor(cedula_conductor, personal_base_datos='exprex.db'
                     if foto_comprobante is not None:
                         # El botón de confirmación final solo aparece si la foto existe
                         if st.button("💾 Confirmar Entrega y Guardar", key=f"btn_cierre_{viaje_id}", use_container_width=True, type="primary"):
-                            # Llama a tu función maestra que calcula finanzas, guarda foto y cambia a 'Entregado'
-                            exito = actualizar_estatus_viaje(viaje_id, 'Entregado', personal_base_datos, foto_comprobante)
+                            
+                            # 🛠️ PASAMOS EL FLUJO DE POSTGRESQL A TU FUNCIÓN MAESTRA FINANCIERA
+                            # Nota: internamente 'actualizar_estatus_viaje' debe usar obtener_conexion_db()
+                            exito = actualizar_estatus_viaje(viaje_id, 'Entregado', foto_comprobante)
+                            
                             if exito:
                                 st.session_state[f"cerrando_viaje_{viaje_id}"] = None
                                 st.success("🎉 ¡Flete finalizado, montos procesados y soporte guardado con éxito!")
@@ -232,7 +247,8 @@ def renderizar_panel_conductor(cedula_conductor, personal_base_datos='exprex.db'
             st.write("###### ⛽ Registro de Suministro Diésel/Gasolina")
             
             with st.form("form_combustible_chofer", clear_on_submit=True):
-                fecha_gasto = st.date_input("📅 Fecha del Suministro:", value=datetime.date.today())
+                # Usamos dt.date.today() que es el alias limpio que dejamos arriba
+                fecha_gasto = st.date_input("📅 Fecha del Suministro:", value=dt.date.today())
                 litros = st.number_input("🧪 Litros Surtidos:", min_value=0.0, step=1.0)
                 monto_pagado = st.number_input("💵 Monto Total Pagado ($):", min_value=0.0, step=1.0)
                 estacion_servicio = st.text_input("🏪 Estación de Servicio o Ubicación:")
@@ -245,14 +261,15 @@ def renderizar_panel_conductor(cedula_conductor, personal_base_datos='exprex.db'
                     st.error("❌ Error: Debe ingresar valores válidos de litros y costo monetario.")
                 else:
                     try:
-                        conexion = sqlite3.connect(personal_base_datos)
-                        cursor = conexion.cursor()
-                        cursor.execute('''
-                            INSERT INTO control_combustible (cedula_conductor, fecha, litros, monto_usd, estacion, observaciones)
-                            VALUES (?, ?, ?, ?, ?, ?)
-                        ''', (cedula_conductor, str(fecha_gasto), litros, monto_pagado, estacion_servicio, observaciones_comb))
-                        conexion.commit()
-                        conexion.close()
+                        # 🛠️ MIGRADO A POSTGRESQL (RAILWAY)
+                        with obtener_conexion_db() as conexion:
+                            with conexion.cursor() as cursor:
+                                # Reemplazamos los '?' por '%s' para la sintaxis de Postgres
+                                cursor.execute('''
+                                    INSERT INTO control_combustible (cedula_conductor, fecha, litros, monto_usd, estacion, observaciones)
+                                    VALUES (%s, %s, %s, %s, %s, %s)
+                                ''', (cedula_conductor, str(fecha_gasto), litros, monto_pagado, estacion_servicio, observaciones_comb))
+                            conexion.commit()
                         st.success("🎉 ¡Reporte de combustible guardado con éxito!")
                     except Exception as e:
                         st.error(f"❌ Error al registrar en base de datos: {e}")
@@ -299,10 +316,9 @@ def renderizar_panel_conductor(cedula_conductor, personal_base_datos='exprex.db'
             format_func=lambda x: f"{meses_dicc[x[1]]} {x[0]}" if x is not None else ""
         )
         
-        # 💡 CONTROL CRÍTICO: Si no hay opciones, evitamos que rompa la app
+        # 💡 CONTROL CRÍTICO CORREGIDO: Usamos el alias 'dt' para evitar el NameError
         if mes_seleccionado is None:
-            #import datetime
-            hoy = datetime.date.today()
+            hoy = dt.date.today()
             mes_seleccionado = (hoy.year, hoy.month)
         
         # Calculamos la fecha de inicio y fin del mes seleccionado para el SQL
@@ -315,18 +331,19 @@ def renderizar_panel_conductor(cedula_conductor, personal_base_datos='exprex.db'
             f_fin_mes = f"{ano_sel}-{mes_sel + 1:02d}-01"
             
         try:
-            conexion = sqlite3.connect(personal_base_datos)
-            # 🎯 CLAVE: Añadimos la condición de fechas en el WHERE usando date()
-            df_historial = pd.read_sql_query('''
-                SELECT id_viaje, fecha_despacho, cliente_solicitante, origen, destino, estatus_viaje, tipo_material, num_pedido, pago_chofer_usd
-                FROM viajes 
-                WHERE cedula_conductor = ? 
-                  AND estatus_viaje NOT IN ('Solicitado', 'Por Salir', 'En Ruta')
-                  AND date(fecha_despacho) >= date(?)
-                  AND date(fecha_despacho) < date(?)
-                ORDER BY id_viaje DESC
-            ''', conexion, params=(cedula_conductor, f_inicio_mes, f_fin_mes))
-            conexion.close()
+            # 🛠️ MIGRADO A POSTGRESQL (RAILWAY)
+            with obtener_conexion_db() as conexion:
+                # Adaptamos la sintaxis de fecha y usamos marcadores %s para Postgres
+                query_historial = '''
+                    SELECT id_viaje, fecha_despacho, cliente_solicitante, origen, destino, estatus_viaje, tipo_material, num_pedido, pago_chofer_usd
+                    FROM viajes 
+                    WHERE cedula_conductor = %s 
+                      AND estatus_viaje NOT IN ('Solicitado', 'Por Salir', 'En Ruta')
+                      AND fecha_despacho::date >= %s::date
+                      AND fecha_despacho::date < %s::date
+                    ORDER BY id_viaje DESC
+                '''
+                df_historial = pd.read_sql_query(query_historial, conexion, params=(cedula_conductor, f_inicio_mes, f_fin_mes))
         except Exception as e:
             st.error(f"❌ Error al cargar historial: {e}")
             df_historial = pd.DataFrame()
@@ -369,15 +386,15 @@ def renderizar_panel_conductor(cedula_conductor, personal_base_datos='exprex.db'
             
             if id_historial_sel:
                 try:
-                    conexion = sqlite3.connect(personal_base_datos)
-                    cursor = conexion.cursor()
-                    cursor.execute('''
-                        SELECT cliente_solicitante, origen, destino, tipo_material, peso_carga_kg, estatus_viaje, num_pedido, tipo_viaje, pago_chofer_usd
-                        FROM viajes 
-                        WHERE id_viaje = ?
-                    ''', (id_historial_sel,))
-                    v_det = cursor.fetchone()
-                    conexion.close()
+                    # 🛠️ MIGRADO A POSTGRESQL (RAILWAY)
+                    with obtener_conexion_db() as conexion:
+                        with conexion.cursor() as cursor:
+                            cursor.execute('''
+                                SELECT cliente_solicitante, origen, destino, tipo_material, peso_carga_kg, estatus_viaje, num_pedido, tipo_viaje, pago_chofer_usd
+                                FROM viajes 
+                                WHERE id_viaje = %s
+                            ''', (id_historial_sel,))
+                            v_det = cursor.fetchone()
                     
                     if v_det:
                         pago_flotante = float(v_det[8]) if v_det[8] is not None else 0.0
@@ -396,12 +413,7 @@ def renderizar_panel_conductor(cedula_conductor, personal_base_datos='exprex.db'
 
         # 🔄 BOTÓN DE RETORNO AL MENÚ PRINCIPAL
         st.write("---")
-
         st.success("Para salir de aquí haz clic o tap en la pestaña de Fletes Activos")
-
-        #if st.button("🏠 Volver al Menú Principal", key="btn_home_hist", use_container_width=True):
-        #    st.session_state["chofer_pagina"] = "Menu Principal"
-        #    st.rerun()
 
     # =========================================================================
     # 📌 SECCIÓN DE AYUDA Y SOPORTE EN LA BARRA LATERAL
@@ -425,13 +437,13 @@ def renderizar_panel_conductor(cedula_conductor, personal_base_datos='exprex.db'
             Comunícate de inmediato con el administrador del sistema para reportar fallas o solicitar soporte técnico.
             """)
             
-            
         # --- TÉRMINOS Y CONDICIONES DESDE TERMINOS.TXT ---
         with st.expander("📄 Términos y Condiciones", expanded=False):
-            # Mostramos el contenido exacto del archivo txt en pantalla
             st.markdown(texto_legal_choferes)
+            
         st.markdown("---")    
-        if st.sidebar.button("🚪 Cerrar Sesión", use_container_width=True):
+        # Usamos st.button directo especificando el contenedor del sidebar de forma limpia
+        if st.button("🚪 Cerrar Sesión", use_container_width=True, key="btn_logout_sidebar"):
             st.session_state.autenticado = False
             st.session_state.usuario_cedula = ""
             st.session_state.usuario_nombre = ""
@@ -439,125 +451,121 @@ def renderizar_panel_conductor(cedula_conductor, personal_base_datos='exprex.db'
             st.session_state.cliente_id = None
             st.session_state.vista_login = "login"
             st.rerun()
+            
         st.markdown("---")
-        st.caption("ExpreX Choferes v1.6.1 • 🔒 Local Safe")
+        st.caption("ExpreX Choferes v1.6.1 • ☁️ Railway Cloud Safe")
 
 # ==========================================================================================================
 
-def actualizar_estatus_viaje(id_viaje, nuevo_estatus, db_path, archivo_foto_streamlit=None):
+def actualizar_estatus_viaje(id_viaje, nuevo_estatus, archivo_foto_streamlit=None):
     """
-    Función Única Centralizada para controlar el ciclo de vida de un flete con el alias 'st'.
+    Función Única Centralizada para controlar el ciclo de vida de un flete en PostgreSQL.
+    Se eliminó 'db_path' ya que la conexión se maneja mediante el pool global de Railway.
     """
     try:
-        conexion = sqlite3.connect(db_path)
-        cursor = conexion.cursor()
-        
-        if nuevo_estatus == 'Entregado':
-            # 📁 1️⃣ GUARDADO FÍSICO DE LA FOTO
-            ruta_foto_final = None
-            if archivo_foto_streamlit is not None:
-                carpeta_destino = "fotos_entregas"
-                if not os.path.exists(carpeta_destino):
-                    os.makedirs(carpeta_destino)
+        import psycopg2
+        # 🛠️ MIGRADO A POSTGRESQL (RAILWAY)
+        with obtener_conexion_db() as conexion:
+            with conexion.cursor() as cursor:
                 
-                extension = archivo_foto_streamlit.name.split(".")[-1]
-                nombre_archivo = f"viaje_{id_viaje}_evidencia.{extension}"
-                ruta_foto_final = os.path.join(carpeta_destino, nombre_archivo)
-                
-                with open(ruta_foto_final, "wb") as f:
-                    f.write(archivo_foto_streamlit.getbuffer())
+                if nuevo_estatus == 'Entregado':
+                    # 📁 1️⃣ LECTURA BINARIA DE LA FOTO (Evitamos guardado local volátil)
+                    bytes_foto = None
+                    if archivo_foto_streamlit is not None:
+                        # Convertimos el buffer de Streamlit directamente a bytes para guardarlo en el campo BYTEA
+                        bytes_foto = archivo_foto_streamlit.getvalue()
 
-            # 2️⃣ LEER DATOS REALES DEL VIAJE
-            cursor.execute("""
-                SELECT monto_flete_usd, cedula_conductor, distancia_km, tipo_viaje, id_cliente 
-                FROM viajes 
-                WHERE id_viaje = ?
-            """, (id_viaje,))
-            res_v = cursor.fetchone()
-            
-            if res_v:
-                # 🎯 CORRECCIÓN: Si el flete inicial es None, le ponemos 0.0 para que no explote
-                monto_flete_total = float(res_v[0]) if res_v[0] is not None else 0.0
-                cedula_chofer = res_v[1]
-                distancia_real = float(res_v[2]) if res_v[2] is not None else 0.0
-                tipo_viaje = res_v[3]
-                id_cliente = res_v[4]
-                
-                # 📊 Recálculo Matemático
-                # 🎯 CORRECCIÓN: Si la distancia es mayor a 0 usa el max, si es 0 usa mínimo 8.0 por defecto
-                distancia_calculo = max(distancia_real, 8.0) if distancia_real > 0 else 8.0
-                tarifa_por_km = 4.0 if tipo_viaje == 'Express' else 2.5
-                monto_flete_total = round(distancia_calculo * tarifa_por_km, 2)
-                
-                # --- 🏦 SECCIÓN: ACTUALIZACIÓN DE SALDO EN TABLA CLIENTES ---
-                if id_cliente is not None:
-                    cursor.execute("SELECT limite_credito_usd, saldo_pendiente_usd, credito_disponible_usd FROM clientes WHERE id_cliente = ?", (id_cliente,))
-                    res_cli = cursor.fetchone()
+                    # 2️⃣ LEER DATOS REALES DEL VIAJE
+                    cursor.execute("""
+                        SELECT monto_flete_usd, cedula_conductor, distancia_km, tipo_viaje, id_cliente 
+                        FROM viajes 
+                        WHERE id_viaje = %s
+                    """, (id_viaje,))
+                    res_v = cursor.fetchone()
                     
-                    if res_cli:
-                        limite_credito_actual = float(res_cli[0]) if res_cli[0] is not None else 0.0
-                        saldo_actual = float(res_cli[1]) if res_cli[1] is not None else 0.0
-                        credito_disponible_actual = float(res_cli[2]) if res_cli[2] is not None else 0.0
+                    if res_v:
+                        # 🎯 CONTROL DE TIPOS: Forzamos float() por si Postgres devuelve tipos Decimal (Numeric)
+                        monto_flete_total = float(res_v[0]) if res_v[0] is not None else 0.0
+                        cedula_chofer = res_v[1]
+                        distancia_real = float(res_v[2]) if res_v[2] is not None else 0.0
+                        tipo_viaje = res_v[3]
+                        id_cliente = res_v[4]
                         
-                        credito_disponible_actual = round(credito_disponible_actual - monto_flete_total, 2)
-                        saldo_actual = round(saldo_actual + monto_flete_total, 2)
+                        # 📊 Recálculo Matemático
+                        distancia_calculo = max(distancia_real, 8.0) if distancia_real > 0 else 8.0
+                        tarifa_por_km = 4.0 if tipo_viaje == 'Express' else 2.5
+                        monto_flete_total = round(distancia_calculo * tarifa_por_km, 2)
                         
-                        cursor.execute("""
-                            UPDATE clientes 
-                            SET limite_credito_usd = ?, saldo_pendiente_usd = ?, credito_disponible_usd = ? 
-                            WHERE id_cliente = ?
-                        """, (limite_credito_actual, saldo_actual, credito_disponible_actual, id_cliente))
+                        # --- 🏦 SECCIÓN: ACTUALIZACIÓN DE SALDO EN TABLA CLIENTES ---
+                        if id_cliente is not None:
+                            cursor.execute("""
+                                SELECT limite_credito_usd, saldo_pendiente_usd, credito_disponible_usd 
+                                FROM clientes 
+                                WHERE id_cliente = %s
+                            """, (id_cliente,))
+                            res_cli = cursor.fetchone()
+                            
+                            if res_cli:
+                                limite_credito_actual = float(res_cli[0]) if res_cli[0] is not None else 0.0
+                                saldo_actual = float(res_cli[1]) if res_cli[1] is not None else 0.0
+                                credito_disponible_actual = float(res_cli[2]) if res_cli[2] is not None else 0.0
+                                
+                                credito_disponible_actual = round(credito_disponible_actual - monto_flete_total, 2)
+                                saldo_actual = round(saldo_actual + monto_flete_total, 2)
+                                
+                                cursor.execute("""
+                                    UPDATE clientes 
+                                    SET limite_credito_usd = %s, saldo_pendiente_usd = %s, credito_disponible_usd = %s 
+                                    WHERE id_cliente = %s
+                                """, (limite_credito_actual, saldo_actual, credito_disponible_actual, id_cliente))
 
-                # ------------------------------------------------------------------
-
-                # Fórmulas Financieras Oficiales
-                cursor.execute("SELECT propio FROM conductores WHERE cedula = ?", (cedula_chofer,))
-                res_c = cursor.fetchone()
-                es_propio = res_c[0] if res_c and res_c[0] else "No"
-                
-                descuento = round(monto_flete_total * 0.15, 2)
-                importe_neto = round(monto_flete_total - descuento, 2)
-                porcentaje_chofer = 0.75 if es_propio == "Sí" else 0.37
-                pago_chofer = round(importe_neto * porcentaje_chofer, 2)
-                beneficio_exprex = round(importe_neto - pago_chofer, 2)
-                
-                # 💾 Inyección total en la tabla 'viajes'
-                sql_update = """
-                    UPDATE viajes 
-                    SET estatus_viaje = 'Entregado', 
-                        foto_evidencia = ?, 
-                        monto_flete_usd = ?,
-                        descuento_usd = ?,
-                        importe_neto_usd = ?, 
-                        pago_chofer_usd = ?, 
-                        beneficio_exprex_usd = ?  
-                    WHERE id_viaje = ?
-                """
-                cursor.execute(sql_update, (
-                    ruta_foto_final, monto_flete_total, descuento, 
-                    importe_neto, pago_chofer, beneficio_exprex, id_viaje
-                ))
-                conexion.commit()
-                st.info("Espere mientras se procesan los cálculos financieros del flete...")
-                time.sleep(1)
-            else:
-                st.error("❌ No se encontraron datos para procesar el flete financiero.")
-                conexion.close()
-                return False
-                
-        else:
-            cursor.execute("UPDATE viajes SET estatus_viaje = ? WHERE id_viaje = ?", (nuevo_estatus, id_viaje))
-            conexion.commit()
-            
-        conexion.close()
+                        # ------------------------------------------------------------------
+                        # Fórmulas Financieras Oficiales
+                        cursor.execute("SELECT propio FROM conductores WHERE cedula = %s", (cedula_chofer,))
+                        res_c = cursor.fetchone()
+                        es_propio = res_c[0] if res_c and res_c[0] else "No"
+                        
+                        descuento = round(monto_flete_total * 0.15, 2)
+                        importe_neto = round(monto_flete_total - descuento, 2)
+                        porcentaje_chofer = 0.75 if es_propio == "Sí" else 0.37
+                        pago_chofer = round(importe_neto * porcentaje_chofer, 2)
+                        beneficio_exprex = round(importe_neto - pago_chofer, 2)
+                        
+                        # 💾 Inyección total en la tabla 'viajes' (Guarda la foto como binario en Postgres)
+                        sql_update = """
+                            UPDATE viajes 
+                            SET estatus_viaje = 'Entregado', 
+                                foto_evidencia = %s, 
+                                monto_flete_usd = %s,
+                                descuento_usd = %s,
+                                importe_neto_usd = %s, 
+                                pago_chofer_usd = %s, 
+                                beneficio_exprex_usd = %s  
+                            WHERE id_viaje = %s
+                        """
+                        cursor.execute(sql_update, (
+                            psycopg2.Binary(bytes_foto) if bytes_foto is not None else None, 
+                            monto_flete_total, descuento, importe_neto, 
+                            pago_chofer, beneficio_exprex, id_viaje
+                        ))
+                        conexion.commit()
+                        st.info("Espere mientras se procesan los cálculos financieros del flete...")
+                        time.sleep(1)
+                    else:
+                        st.error("❌ No se encontraron datos para procesar el flete financiero.")
+                        return False
+                        
+                else:
+                    cursor.execute("UPDATE viajes SET estatus_viaje = %s WHERE id_viaje = %s", (nuevo_estatus, id_viaje))
+                    conexion.commit()
+                    
         return True
         
     except Exception as e:
         import traceback
-        print("\n=== 🛑 DETALLE COMPLETO DEL ERROR EN BASE DE DATOS ===")
-        traceback.print_exc()  # Esto imprimirá en tu terminal la línea exacta que falla
-        print("=======================================================\n")
+        print("\n=== 🛑 DETALLE COMPLETO DEL ERROR EN BASE DE DATOS VALIDADOR ===")
+        traceback.print_exc()
+        print("=================================================================\n")
         
         st.error(f"❌ Error en el módulo maestro financiero: {e}")
         return False
-
