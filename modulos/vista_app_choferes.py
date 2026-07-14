@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import datetime as dt
+import psycopg2
 import time
 import os
 import sys
@@ -22,7 +23,50 @@ def obtener_conexion_db():
     conn = psycopg2.connect(DATABASE_URL, sslmode="require")
     return conn
 
+# Función para contar viajes pendientes de un chofer específico
+def contar_viajes_por_salir(cedula_conductor: str) -> int:
+    """Cuenta los viajes pendientes 'Por Salir' específicos de un conductor."""
+    try:
+        with obtener_conexion_db() as conexion:
+            with conexion.cursor() as cursor:
+                # Filtramos por estatus Y por la cédula del conductor que consulta
+                sql = """
+                    SELECT COUNT(*) 
+                    FROM viajes 
+                    WHERE estatus_viaje = 'Por Salir' 
+                      AND cedula_conductor = %s
+                """
+                cursor.execute(sql, (str(cedula_conductor),))
+                
+                # Saneado para evitar el error 'NoneType' en Pylance
+                resultado = cursor.fetchone()
+                cantidad = int(resultado[0]) if resultado is not None else 0
+                return cantidad
+    except Exception:
+        return 0
 
+def reproducir_alerta_victoria():
+    """Inyecta un componente de audio HTML oculto para reproducir la fanfarria
+
+    de victoria en el navegador del usuario (PC o Celular).
+    """
+    ruta_sonido = "/modulos/tono_alerta_de_app.mp3"
+    try:
+        with open(ruta_sonido, "rb") as f:
+            datos_audio = f.read()
+
+        # Convertimos el archivo a un formato que el navegador acepta de forma nativa
+        audio_base64 = base64.b64encode(datos_audio).decode()
+        html_audio = f"""
+            <audio autoplay style="display:none;">
+                <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
+            </audio>
+        """
+        # Inyectamos el audio oculto en la interfaz
+        st.markdown(html_audio, unsafe_allow_html=True)
+    except Exception as e:
+        # Usamos caption silencioso para que si falla el archivo de audio, la app siga operativa
+        st.caption(f"🔊 Alerta sonora no disponible.")
 
 # 🔍 CONTROL DE RUTAS CRÍTICO
 #ruta_raiz = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -30,7 +74,8 @@ def obtener_conexion_db():
 #    sys.path.insert(0, ruta_raiz)
 
 # E importas desde el paquete modulos
-from modulos.utils import obtener_conexion_db, reproducir_alerta_victoria
+#from modulos.utils import reproducir_alerta_victoria
+
 
 
 ruta_terminos = os.path.join("modulos", "terminos.txt")
