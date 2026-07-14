@@ -356,6 +356,10 @@ def mostrar_interfaz_cliente():
             key="filtro_mes_cliente" # Key única para evitar conflictos en Streamlit
         )
         
+        # 💡 CONTROL CRÍTICO: Si no hay opciones, evitamos que rompa la app
+        if mes_seleccionado is None:
+            mes_seleccionado = (hoy.year, hoy.month)
+
         ano_sel, mes_sel = mes_seleccionado
         f_inicio_mes = f"{ano_sel}-{mes_sel:02d}-01"
         if mes_sel == 12:
@@ -364,22 +368,23 @@ def mostrar_interfaz_cliente():
             f_fin_mes = f"{ano_sel}-{mes_sel + 1:02d}-01"
             
         try:
-            conexion = sqlite3.connect('exprex.db')
+            with obtener_conexion_db() as conexion:
+            #conexion = sqlite3.connect('exprex.db')
             
             # 🎯 SOLUCIÓN DEFINITIVA: Filtramos el mes comparando directamente 
             # las cadenas de texto (año y mes) del selector con la columna fecha_despacho.
             # Además, incluimos TODOS los estatus para que puedas ver el historial completo del mes.
-            filtro_mes_texto = f"{ano_sel}-{mes_sel:02d}-%"
-            
-            df_historial = pd.read_sql_query('''
-                SELECT id_viaje, fecha_despacho, origen, cliente_solicitante, destino, estatus_viaje, tipo_material, num_pedido, 
-                       monto_flete_usd, descuento_usd, importe_neto_usd
-                FROM viajes 
-                WHERE id_cliente = %s 
-                  AND fecha_despacho LIKE %s
-                ORDER BY id_viaje DESC
-            ''', conexion, params=(st.session_state.cliente_id, filtro_mes_texto)) 
-            conexion.close()
+                filtro_mes_texto = f"{ano_sel}-{mes_sel:02d}-%"
+                
+                df_historial = pd.read_sql_query('''
+                    SELECT id_viaje, fecha_despacho, origen, cliente_solicitante, destino, estatus_viaje, tipo_material, num_pedido, 
+                        monto_flete_usd, descuento_usd, importe_neto_usd
+                    FROM viajes 
+                    WHERE id_cliente = %s 
+                    AND fecha_despacho LIKE %s
+                    ORDER BY id_viaje DESC
+                ''', conexion, params=(st.session_state.cliente_id, filtro_mes_texto)) 
+                conexion.close()
         except Exception as e:
             st.error(f"❌ Error al cargar historial filtrado: {e}")
             df_historial = pd.DataFrame()
