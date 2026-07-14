@@ -4,3 +4,6 @@ psycopg2-binary
 streamlit-cookies-manager
 streamlit-option-menu
 openpyxl
+streamlit==1.32.0
+pandas==2.2.0
+psycopg2-binary==2.9.9
