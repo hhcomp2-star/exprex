@@ -36,25 +36,38 @@ def renderizar_pestana_asignar(personal_base_datos='exprex.db'):
 
     # 3️⃣ Construcción del Selector Seguro (Usa mapeo por diccionario para evitar fallas de Pandas)
     dicc_solicitudes = {}
-    for _, fila in df_solicitudes.iterrows():
+    for idx, fila in df_solicitudes.iterrows():
         urgencia = "🚨 [EXPRESS]" if fila['tipo_viaje'] == 'Express' else "🕒 [Normal]"
-        info_texto = f"{urgencia} Flete N° {fila['id_viaje']} - {fila['cliente_solicitante']} -> Destino: {fila['destino']}"
-        dicc_solicitudes[fila['id_viaje']] = info_texto
+        
+        # Validamos si el id_viaje es None para que la visualización no se rompa
+        id_v = fila['id_viaje']
+        id_v_texto = str(id_v) if id_v is not None and str(id_v).strip() != "" else "S/N"
+        
+        info_texto = f"{urgencia} Flete N° {id_v_texto} - {fila['cliente_solicitante']} -> Destino: {fila['destino']}"
+        
+        # Usamos el ÍNDICE de la fila (idx) como CLAVE del selector para que NUNCA sea None
+        dicc_solicitudes[idx] = info_texto
 
-    lista_ids = list(dicc_solicitudes.keys())
+    lista_indices = list(dicc_solicitudes.keys())
     
-    id_seleccionado = st.selectbox(
+    indice_seleccionado = st.selectbox(
         "🔍 Seleccione la solicitud que desea procesar:",
-        options=lista_ids,
-        format_func=lambda x: dicc_solicitudes.get(x, f"Flete N° {x}")
+        options=lista_indices,
+        format_func=lambda x: dicc_solicitudes.get(x, "Flete no identificado")
     )
 
-    # 4️⃣ ESCUDO DEFENSIVO: Verificación estricta de existencia en el DataFrame actual
-    fila_filtrada = df_solicitudes[df_solicitudes['id_viaje'] == id_seleccionado]
+    # 4️⃣ ESCUDO DEFENSIVO SEGURO: Extraemos la fila directamente usando el índice seleccionado
+    if indice_seleccionado is not None and indice_seleccionado in df_solicitudes.index:
+        fila_filtrada = df_solicitudes.loc[[indice_seleccionado]]
+    else:
+        fila_filtrada = pd.DataFrame() # Vacío si no hay selección válida
     
     if fila_filtrada.empty:
         st.warning("🔄 Sincronizando datos de la lista... Seleccione un flete de la lista.")
         return
+
+    # A partir de aquí, cuando uses los datos de la solicitud, hazlo con la fila_filtrada:
+    # Ejemplo: datos_viaje = fila_filtrada.iloc[0]
 
     # Si pasa el escudo, extraemos los datos de manera 100% segura
     viaje_sel = fila_filtrada.iloc[0]
@@ -106,12 +119,28 @@ def renderizar_pestana_asignar(personal_base_datos='exprex.db'):
         st.markdown("---")
         
         # Selector de Choferes mapeado de forma segura
-        dict_choferes = {row['cedula']: f"{row['nombre']} (C.I. {row['cedula']})" for _, row in df_choferes.iterrows()}
-        chofer_assigned = st.selectbox(
-            "👤 Seleccione el Conductor a Asignar:",
-            options=list(dict_choferes.keys()),
-            format_func=lambda x: dict_choferes.get(x)
-        )
+        # 1. Validamos que el DataFrame no esté vacío y tenga datos válidos
+        if df_choferes is not None and not df_choferes.empty:
+            # Creamos el diccionario asegurándonos de que no haya valores nulos en cédula o nombre
+            dict_choferes = {
+                str(row['cedula']): f"{row['nombre']} (C.I. {row['cedula']})" 
+                for _, row in df_choferes.iterrows() 
+                if row['cedula'] and row['nombre']
+            }
+        else:
+            dict_choferes = {}
+
+        # 2. Renderizamos el selector condicionalmente
+        if dict_choferes:
+            chofer_assigned = st.selectbox(
+                "👤 Seleccione el Conductor a Asignar:",
+                options=list(dict_choferes.keys()),
+                format_func=lambda x: dict_choferes.get(x, "Chofer no identificado")
+            )
+        else:
+            # Si está vacío, mostramos una advertencia y asignamos None de forma segura
+            st.warning("⚠️ No se encontraron choferes registrados o disponibles en el sistema.")
+            chofer_assigned = None
 
         boton_confirmar = st.form_submit_button("🚀 Registrar Pre-Asignación", use_container_width=True)
         
