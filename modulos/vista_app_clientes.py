@@ -348,43 +348,79 @@ def mostrar_interfaz_cliente():
                 m += 12
                 a -= 1
             opciones_meses.append((a, m))
-            
-        # Formateamos el selector para que el cliente vea "Julio 2026", "Junio 2026", etc.
+
         mes_seleccionado = st.selectbox(
             "📅 Seleccione el mes a consultar:",
             options=opciones_meses,
-            format_func=lambda x: f"{meses_dicc[x[1]]} {x[0]}" if x is not None else ""
+            format_func=lambda x: f"{meses_dicc[x[1]]} {x[0]}",
+            key="filtro_mes_cliente" # Key única para evitar conflictos en Streamlit
         )
         
-        # 💡 CONTROL CRÍTICO: Si no hay opciones, evitamos que rompa la app
-        if mes_seleccionado is None:
-            mes_seleccionado = (hoy.year, hoy.month)
-        
         ano_sel, mes_sel = mes_seleccionado
+        f_inicio_mes = f"{ano_sel}-{mes_sel:02d}-01"
+        if mes_sel == 12:
+            f_fin_mes = f"{ano_sel + 1}-01-01"
+        else:
+            f_fin_mes = f"{ano_sel}-{mes_sel + 1:02d}-01"
             
         try:
-            # Optamos por EXTRACT(YEAR...) y EXTRACT(MONTH...) optimizado para PostgreSQL
-            query_historial = """
+            conexion = sqlite3.connect('exprex.db')
+            
+            # 🎯 SOLUCIÓN DEFINITIVA: Filtramos el mes comparando directamente 
+            # las cadenas de texto (año y mes) del selector con la columna fecha_despacho.
+            # Además, incluimos TODOS los estatus para que puedas ver el historial completo del mes.
+            filtro_mes_texto = f"{ano_sel}-{mes_sel:02d}-%"
+            
+            df_historial = pd.read_sql_query('''
                 SELECT id_viaje, fecha_despacho, origen, cliente_solicitante, destino, estatus_viaje, tipo_material, num_pedido, 
                        monto_flete_usd, descuento_usd, importe_neto_usd
                 FROM viajes 
                 WHERE id_cliente = %s 
-                  AND EXTRACT(YEAR FROM fecha_despacho) = %s
-                  AND EXTRACT(MONTH FROM fecha_despacho) = %s
+                  AND fecha_despacho LIKE %s
                 ORDER BY id_viaje DESC
-            """
-            
-            cliente_id_seguro = st.session_state.get("cliente_id", 0)
-            
-            with obtener_conexion_db() as conexion:
-                df_historial = pd.read_sql_query(
-                    query_historial, 
-                    conexion, 
-                    params=(cliente_id_seguro, ano_sel, mes_sel)
-                )
+            ''', conexion, params=(st.session_state.cliente_id, filtro_mes_texto)) 
+            conexion.close()
         except Exception as e:
             st.error(f"❌ Error al cargar historial filtrado: {e}")
             df_historial = pd.DataFrame()
+
+            
+        # Formateamos el selector para que el cliente vea "Julio 2026", "Junio 2026", etc.
+        #mes_seleccionado = st.selectbox(
+        #    "📅 Seleccione el mes a consultar:",
+        #    options=opciones_meses,
+        #    format_func=lambda x: f"{meses_dicc[x[1]]} {x[0]}" if x is not None else ""
+        #)
+        
+        # 💡 CONTROL CRÍTICO: Si no hay opciones, evitamos que rompa la app
+        #if mes_seleccionado is None:
+        #    mes_seleccionado = (hoy.year, hoy.month)
+        
+        #ano_sel, mes_sel = mes_seleccionado
+            
+        #try:
+            # Optamos por EXTRACT(YEAR...) y EXTRACT(MONTH...) optimizado para PostgreSQL
+        #    query_historial = """
+        #        SELECT id_viaje, fecha_despacho, origen, cliente_solicitante, destino, estatus_viaje, tipo_material, num_pedido, 
+        #               monto_flete_usd, descuento_usd, importe_neto_usd
+        #        FROM viajes 
+        #        WHERE id_cliente = %s 
+        #          AND EXTRACT(YEAR FROM fecha_despacho) = %s
+        #          AND EXTRACT(MONTH FROM fecha_despacho) = %s
+        #        ORDER BY id_viaje DESC
+        #    """
+            
+        #    cliente_id_seguro = st.session_state.get("cliente_id", 0)
+        #    
+        #    with obtener_conexion_db() as conexion:
+        #        df_historial = pd.read_sql_query(
+        #            query_historial, 
+        #            conexion, 
+        #            params=(cliente_id_seguro, ano_sel, mes_sel)
+        #        )
+        #except Exception as e:
+        #    st.error(f"❌ Error al cargar historial filtrado: {e}")
+        #    df_historial = pd.DataFrame()
 
         if df_historial.empty:
             st.info(f"ℹ️ No se registran despachos finalizados en {meses_dicc[mes_sel]} {ano_sel}.")
@@ -602,7 +638,7 @@ def mostrar_interfaz_cliente():
         with st.expander("📄 Marco Legal y Políticas", expanded=False):
             st.markdown("""
             ### Contrato de Uso y Condiciones de Servicio
-            *ExpreX Logística — v1.4.0 (2026)*
+            *ExpreX Logística — v1.7.5 (2026)*
             
             Al utilizar esta plataforma, usted acepta las siguientes políticas operativas:
             
@@ -643,4 +679,4 @@ def mostrar_interfaz_cliente():
             st.rerun()
 
         # Pequeño pie de página unificado abajo de los dos módulos
-        st.caption("ExpreX Logística v1.6.3 • 🔒 Conexión Segura")
+        st.caption("ExpreX Logística v1.7.5 • 🔒 Conexión Segura")
