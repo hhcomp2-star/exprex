@@ -3,9 +3,18 @@ import pandas as pd
 import datetime as dt
 import time
 import os
-from modulos.utils import contar_viajes_pendientes_chofer, reproducir_alerta_victoria, obtener_conexion_db
-#from modulos.utils import obtener_conexion_db
+import sys
 
+# 🎯 FORZAR A PYTHON A ENCONTRAR LA CARPETA MODULOS EN CUALQUIER ENTORNO
+carpeta_actual = os.path.dirname(__file__)
+if carpeta_actual not in sys.path:
+    sys.path.insert(0, carpeta_actual)
+
+# Ahora la importación directa funcionará de forma idéntica en tu PC y en Railway
+try:
+    from utils import contar_viajes_pendientes_chofer, reproducir_alerta_victoria, obtener_conexion_db
+except ModuleNotFoundError:
+    from modulos.utils import contar_viajes_pendientes_chofer, reproducir_alerta_victoria, obtener_conexion_db
 # --- CARGAR TEXTO LEGAL DESDE LA CARPETA MODULOS ---
 ruta_terminos = os.path.join("modulos", "terminos.txt")
 

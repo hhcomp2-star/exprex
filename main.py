@@ -1,20 +1,27 @@
 import streamlit as st
-import sqlite3
 import os
 import time
+import sys
 
+# =========================================================================
+# 🔍 CONTROL DE RUTAS CRÍTICO (Soluciona el error 'No module named utils')
+# =========================================================================
+# Obtenemos la ruta absoluta de la raíz y de la carpeta 'modulos'
+ruta_raiz = os.path.dirname(os.path.abspath(__file__))
+ruta_modulos = os.path.join(ruta_raiz, "modulos")
+
+# Inyectamos ambas rutas en el sistema de búsqueda de Python para blindar las importaciones
+for ruta in [ruta_raiz, ruta_modulos]:
+    if ruta not in sys.path:
+        sys.path.insert(0, ruta)
+
+# Ahora las importaciones se ejecutarán con total normalidad en tu PC y en la nube
 from modulos.rec_cont import mostrar_modulo_recuperar_contrasena
 from modulos.nvo_reg import mostrar_modulo_registro
+from modulos.utils import obtener_conexion_db  # Usamos tu pool unificado de Postgres
 
-# Esta DEBE ser la primera instrucción de Streamlit en el archivo
-#st.set_page_config(
-#    page_title="ExpreX Logística",
-#    page_icon="exprex_logo_2.png",  # Aquí llamamos a tu imagen para la pestaña
-#    layout="wide"          # O la configuración que ya tengas armada
-#)
-
-# Configuración de la página (Debe ser la primera línea de Streamlit)
-st.set_page_config(page_title="ExpreX Logística", page_icon="exprex_logo_2.png", layout="centered")
+# Configuración de la página
+st.set_page_config(page_title="ExpreX Logística", page_icon="logo_exprex_5.png", layout="centered")
 
 if "ultima_sincronizacion" not in st.session_state:
     st.session_state.ultima_sincronizacion = 0
@@ -35,23 +42,70 @@ if "cliente_id" not in st.session_state:
 if "vista_login" not in st.session_state:
     st.session_state.vista_login = "login"
 
-# DB_PATH = "exprex.db"
+# =========================================================================
+# 🗄️ PERSISTENCIA ULTRA-ESTABLE (MANTIENE LA SESIÓN AL REINICIAR EL SERVIDOR)
+# =========================================================================
+# Pequeño puente JS/HTML inyectado de forma segura en Streamlit para simular localstorage
+from streamlit.components.v1 import html
+
+def guardar_sesion_local(cedula, nombre, rol, cliente_id=None):
+    """Guarda las credenciales de forma persistente en el dispositivo del chofer/usuario"""
+    id_cli_str = str(cliente_id) if cliente_id else "null"
+    html(f"""
+        <script>
+            localStorage.setItem("exprex_cedula", "{cedula}");
+            localStorage.setItem("exprex_nombre", "{nombre}");
+            localStorage.setItem("exprex_rol", "{rol}");
+            localStorage.setItem("exprex_cliente_id", "{id_cli_str}");
+            localStorage.setItem("exprex_autenticado", "true");
+        </script>
+    """, height=0)
+
+# Verificamos si no está autenticado en memoria RAM, si hay credenciales guardadas en el navegador
+if not st.session_state.autenticado:
+    # Componente invisible que recupera los datos y los envía a Streamlit en caliente via query params
+    query_params = st.query_params
+    if "local_cedula" in query_params and query_params["local_cedula"]:
+        st.session_state.autenticado = True
+        st.session_state.usuario_cedula = query_params["local_cedula"]
+        st.session_state.usuario_nombre = query_params["local_nombre"]
+        st.session_state.usuario_rol = query_params["local_rol"]
+        st.session_state.cliente_id = None if query_params["local_cliente_id"] == "null" else int(query_params["local_cliente_id"])
+        st.query_params.clear()
+        st.rerun()
+    else:
+        # Inyecta el recuperador automático en el navegador del cliente
+        html("""
+            <script>
+                const auth = localStorage.getItem("exprex_autenticado");
+                if (auth === "true") {
+                    const cedula = localStorage.getItem("exprex_cedula");
+                    const nombre = localStorage.getItem("exprex_nombre");
+                    const rol = localStorage.getItem("exprex_rol");
+                    const cliente_id = localStorage.getItem("exprex_cliente_id");
+                    
+                    const url = new URL(window.location.href);
+                    url.searchParams.set("local_cedula", cedula);
+                    url.searchParams.set("local_nombre", nombre);
+                    url.searchParams.set("local_rol", rol);
+                    url.searchParams.set("local_cliente_id", cliente_id);
+                    window.location.href = url.toString();
+                }
+            </script>
+        """, height=0)
 
 # =========================================================================
-# 🕵️‍♂️ VERIFICACIÓN DE CREDENCIALES EN BASE DE DATOS
+# 🕵️‍♂️ VERIFICACIÓN DE CREDENCIALES (MIGRADO A POSTGRESQL)
 # =========================================================================
 def verificar_usuario(cedula, contrasena):
-    conexion = sqlite3.connect('exprex.db')
-    cursor = conexion.cursor()
-
-    # Evaluamos que coincida la clave y que el trabajador esté ACTIVO ('Sí')
-    # Esto aplica de forma general para Administrador y Conductor
-    cursor.execute('''
-        SELECT cedula, nombre, rol FROM usuarios 
-        WHERE cedula = ? AND contrasena = ? AND activo = 'Sí'
-    ''', (cedula, contrasena))
-    resultado = cursor.fetchone()
-    conexion.close()
+    with obtener_conexion_db() as conexion:
+        with conexion.cursor() as cursor:
+            # Usamos %s adaptado para PostgreSQL
+            cursor.execute('''
+                SELECT cedula, nombre, rol FROM usuarios 
+                WHERE cedula = %s AND contrasena = %s AND activo = 'Sí'
+            ''', (cedula, contrasena))
+            resultado = cursor.fetchone()
     return resultado 
 
 # =========================================================================
@@ -59,33 +113,22 @@ def verificar_usuario(cedula, contrasena):
 # =========================================================================
 if not st.session_state.autenticado:
     
-    # -------------------------------------------------------------------------
-    # OPCIÓN A: MÓDULO RECUPERAR CONTRASEÑA
-    # -------------------------------------------------------------------------
     if st.session_state["vista_login"] == "recuperar_contrasena":
         st.markdown("## 🚛 ExpreX Logística")
         mostrar_modulo_recuperar_contrasena() 
-        
         st.markdown("---")
         if st.button("⬅️ Volver al Inicio de Sesión", use_container_width=True):
             st.session_state["vista_login"] = "login"
             st.rerun()
 
-    # -------------------------------------------------------------------------
-    # OPCIÓN B: MÓDULO REGISTRO NUEVO
-    # -------------------------------------------------------------------------
     elif st.session_state["vista_login"] == "registro_nuevo":
         st.markdown("## 🚛 ExpreX Logística")
         mostrar_modulo_registro()
-        
         st.markdown("---")
         if st.button("⬅️ Volver al Inicio de Sesión", use_container_width=True):
             st.session_state["vista_login"] = "login"
             st.rerun()
 
-    # -------------------------------------------------------------------------
-    # OPCIÓN C: MÓDULO RECUPERAR ACCESO TOTAL (SOPORTE WHATSAPP)
-    # -------------------------------------------------------------------------
     elif st.session_state["vista_login"] == "soporte_contacto":
         st.markdown("## 🚛 ExpreX Logística")
         st.write("#### 🎧 Soporte Técnico ExpreX")
@@ -94,19 +137,12 @@ if not st.session_state.autenticado:
         
         mensaje_soporte = "Hola, soy chofer de ExpreX y necesito soporte técnico con mi usuario en la aplicación de Exprex Logística."
         url_whatsapp = f"https://wa.me/584140335554?text={mensaje_soporte.replace(' ', '%20')}"
-
         st.markdown(f"[🚀 ¡Hacer clic aquí para contactar a Soporte Operaciones por WhatsApp!]({url_whatsapp})")
-        
         st.markdown("---")
         if st.button("⬅️ Volver al Inicio de Sesión", use_container_width=True):
             st.session_state["vista_login"] = "login"
             st.rerun()
 
-# ====================================================================================================================================================
-
-    # -------------------------------------------------------------------------
-    # OPCIÓN POR DEFECTO: FORMULARIO DE LOGIN TRADICIONAL
-    # -------------------------------------------------------------------------
     else:
         st.markdown("## 🚛 ExpreX Logística")
         st.write("### Iniciar Sesión")
@@ -114,16 +150,13 @@ if not st.session_state.autenticado:
         with st.form("formulario_login"):
             campo_cedula = st.text_input("Cédula de Identidad o RIF Empresa:").strip()
             campo_clave = st.text_input("Contraseña", type="password")
-
             recordar_sesion = st.checkbox("Mantener mi sesión iniciada en este dispositivo", value=True)
-
             boton_entrar = st.form_submit_button("Ingresar al Sistema")
 
             if boton_entrar:
                 if not campo_cedula or not campo_clave:
                     st.warning("Por favor, rellene todos los campos.")
                 else:
-                    # 1. Primero verifica si es Administrador o Conductor Activo
                     usuario = verificar_usuario(campo_cedula, campo_clave)
                     
                     if usuario:
@@ -132,17 +165,18 @@ if not st.session_state.autenticado:
                         st.session_state.usuario_nombre = usuario[1]
                         st.session_state.usuario_rol = usuario[2]
 
+                        if recordar_sesion:
+                            guardar_sesion_local(usuario[0], usuario[1], usuario[2])
+
                         st.success(f"¡Bienvenido, {usuario[1]}!")
                         time.sleep(1)
                         st.rerun()
                         
                     else:
-                        # 2. Si no es interno, ¡buscamos si es un Cliente Corporativo! 🏢
                         try:
                             from modulos.vista_app_clientes import verificar_cliente_b2b
                             cliente = verificar_cliente_b2b(campo_cedula, campo_clave)
                         except ModuleNotFoundError:
-                            # Simulador por si aún no tienes la carpeta/módulo creada en esta prueba limpia
                             cliente = None 
                         
                         if cliente:
@@ -154,50 +188,41 @@ if not st.session_state.autenticado:
                             st.session_state.usuario_nombre = razon_social_clie 
                             st.session_state.usuario_rol = "Cliente"
 
+                            if recordar_sesion:
+                                guardar_sesion_local(rif_clie, razon_social_clie, "Cliente", id_clie)
+
                             st.success(f"¡Bienvenido al Panel Corporativo, {razon_social_clie}!")
                             time.sleep(1)
                             st.rerun()
                         else:
                             st.error("❌ Cédula/RIF o contraseña incorrecta, o cuenta inactiva. Intente de nuevo.")
 
-        st.markdown("---") # Línea divisoria fina
-
-        # Las 3 columnas de navegación limpia
+        st.markdown("---")
         col_olvido, col_reg, col_soporte = st.columns(3)
         
         with col_olvido:
             if st.button("🔑 Olvidé mi contraseña", use_container_width=True, type="secondary"):
                 st.session_state["vista_login"] = "recuperar_contrasena"
                 st.rerun()
-
         with col_reg:
             if st.button("📝 Registrarme", use_container_width=True, type="secondary"):
                 st.session_state["vista_login"] = "registro_nuevo"
                 st.rerun()
-
         with col_soporte:
             if st.button("🎧 Soporte / Contáctanos", use_container_width=True, type="secondary"):
                 st.session_state["vista_login"] = "soporte_contacto"
                 st.rerun()
-                
         st.markdown("---")
-        #st.caption("© ExpreX Logística. 2026 - Versión 1.4.0")
 
 else:
     # ---------------------------------------------------
     # VISTA PRINCIPAL (PANTALLA LIMPIA POST-LOGIN)
     # ---------------------------------------------------
-    
     st.write(f"## 🚛 ExpreX Logística")
     st.markdown("---")
-    
     st.info(f"**Usuario:** {st.session_state.usuario_nombre} -  **Rol:** {st.session_state.usuario_rol}")
 
-    # -------------------------------------------------------------------------
-    # VISTA PRINCIPAL (DIRECCIONAMIENTO SEGURO POR ROL)
-    # -------------------------------------------------------------------------
-    
-    # Sincroniza si es la primera vez O si ya pasaron 30 minutos (1800 segundos)
+    # Sincronización de tasa BCV (Cada 30 min)
     tiempo_actual = time.time()
     if 'tasa_bcv' not in st.session_state or (tiempo_actual - st.session_state.ultima_sincronizacion) > 1800:
         try:
@@ -209,16 +234,13 @@ else:
             if 'tasa_bcv' not in st.session_state:
                 st.session_state['tasa_bcv'] = "0.00"
 
-    # Si la tasa no se ha cargado en esta sesión, la sincronizamos usando el nuevo módulo
-    if 'tasa_bcv' not in st.session_state:
-        try:
-            from modulos.obtener_tasa_bcv import sincronizar_tasa_bcv
-            sincronizar_tasa_bcv()
-        except Exception as e:
-            st.error(f"Error al importar el módulo de tasa BCV: {e}")
-            st.session_state['tasa_bcv'] = "0.00"
-
-# =============================================================================================================
+    # Captura de cierre de sesión para purgar LocalStorage
+    if not st.session_state.get("autenticado", True):
+        html("""
+            <script>
+                localStorage.clear();
+            </script>
+        """, height=0)
 
     # 1. EVALUACIÓN DE ADMINISTRADOR
     if st.session_state.usuario_rol == "Administrador":
@@ -227,20 +249,16 @@ else:
             mostrar_panel_administrador()
         except Exception as e:
             st.error(f"Error al cargar el panel de Administrador: {e}")
-            #st.rerun()
         
     # 2. EVALUACIÓN DE CONDUCTOR
     elif st.session_state.usuario_rol == "Conductor":
         if "chofer_pagina" not in st.session_state:
             st.session_state["chofer_pagina"] = "Menu Principal"
-
         try:
-            # Importamos tu módulo real e invocamos su función quirúrgica pasándole la cédula
             import modulos.vista_app_choferes as ch
             ch.renderizar_panel_conductor(st.session_state.usuario_cedula)
         except Exception as e:
             st.error(f"Error al cargar el panel de Conductor: {e}")
-            #st.rerun()
             
     # 3. EVALUACIÓN DE CLIENTE
     elif st.session_state.usuario_rol == "Cliente":
@@ -250,4 +268,4 @@ else:
         except Exception as e:
             st.error(f"Error al cargar el panel de Cliente: {e}")
 
-st.caption("© ExpreX Logística. 2026 - Versión 1.6.3")
+st.caption("© ExpreX Logística. 2026 - Versión 1.7.1 • 🔑 Persistencia Activada")
