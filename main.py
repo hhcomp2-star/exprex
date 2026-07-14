@@ -2,6 +2,7 @@ import streamlit as st
 import os
 import time
 import sys
+import psycopg2
 
 # =========================================================================
 # 🔍 CONTROL DE RUTAS CRÍTICO (Soluciona el error 'No module named utils')
@@ -18,10 +19,27 @@ for ruta in [ruta_raiz, ruta_modulos]:
 # Ahora las importaciones se ejecutarán con total normalidad en tu PC y en la nube
 from modulos.rec_cont import mostrar_modulo_recuperar_contrasena
 from modulos.nvo_reg import mostrar_modulo_registro
-from modulos.utils import obtener_conexion_db  # Usamos tu pool unificado de Postgres
+#from modulos.utils import obtener_conexion_db  # Usamos tu pool unificado de Postgres
 
 # Configuración de la página
 st.set_page_config(page_title="ExpreX Logística", page_icon="logo_exprex_5.png", layout="centered")
+
+def obtener_conexion_db():
+    """Busca la variable de entorno 'DATABASE_URL' en Railway de forma automática.
+
+    Si estás en tu PC local, utiliza la URL pública que configuraste para la
+    migración.
+    """
+    # 🛠️ CORRECCIÓN: Agregadas las comillas obligatorias a la URL para evitar el SyntaxError
+    DATABASE_URL = os.environ.get(
+        "DATABASE_URL",
+        "postgresql://postgres:GEwvrkHjgplcirKtSztYrISoKEqcBdXC@tokaido.proxy.rlwy.net:42381/railway",
+    )
+
+    # Conexión segura con SSL requerido para PostgreSQL en la nube
+    conn = psycopg2.connect(DATABASE_URL, sslmode="require")
+    return conn
+
 
 if "ultima_sincronizacion" not in st.session_state:
     st.session_state.ultima_sincronizacion = 0
@@ -252,12 +270,16 @@ else:
         
     # 2. EVALUACIÓN DE CONDUCTOR
     elif st.session_state.usuario_rol == "Conductor":
-        if "chofer_pagina" not in st.session_state:
-            st.session_state["chofer_pagina"] = "Menu Principal"
+        #if "chofer_pagina" not in st.session_state:
+        #    st.session_state["chofer_pagina"] = "Menu Principal"
+        #try:
+        #    import modulos.vista_app_choferes as ch
+        #    ch.renderizar_panel_conductor(st.session_state.usuario_cedula)
         try:
-            import modulos.vista_app_choferes as ch
-            ch.renderizar_panel_conductor(st.session_state.usuario_cedula)
+            from modulos.vista_app_choferes import renderizar_panel_conductor
+            renderizar_panel_conductor(st.session_state.usuario_cedula)
         except Exception as e:
+            st.info("Estoy aquí: Pidiendo credenciales en main)")
             st.error(f"Error al cargar el panel de Conductor: {e}")
             
     # 3. EVALUACIÓN DE CLIENTE

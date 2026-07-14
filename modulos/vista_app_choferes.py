@@ -522,7 +522,7 @@ def renderizar_panel_conductor(cedula_conductor):
             st.rerun()
             
         st.markdown("---")
-        st.caption("ExpreX Choferes v1.6.1 • ☁️ Railway Cloud Safe")
+        st.caption("ExpreX Choferes v1.7.1 • ☁️ Railway Cloud Safe")
 
 # ==========================================================================================================
 
