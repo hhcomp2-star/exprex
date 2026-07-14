@@ -1,11 +1,13 @@
 import streamlit as st
 import os
-import sqlite3
 import time
 import datetime as dt
 import pandas as pd
 import streamlit.components.v1 as components
 
+# Importamos la función de conexión a PostgreSQL que creamos para tu proyecto
+  # <-- Asegúrate de que este import coincida con tu archivo de conexión
+from modulos.utils import obtener_conexion_db
 # --- CARGAR TEXTO LEGAL DESDE LA CARPETA MODULOS ---
 ruta_terminos = os.path.join("modulos", "terminos.txt")
 
@@ -18,29 +20,32 @@ except Exception as e:
 # =========================================================================
 # 🕵️‍♂️ VERIFICACIÓN DE CREDENCIALES CORPORATIVAS
 # =========================================================================
-def verificar_cliente_b2b(rif, contrasena):
+def verificar_cliente_b2b(rif: str, contrasena: str):
     """
     Busca en la tabla clientes si coinciden de forma exacta el RIF y la contraseña.
     Retorna los datos esenciales si tiene éxito, o None si fallan las credenciales.
     """
-    try:
-        conexion = sqlite3.connect('exprex.db')
-        cursor = conexion.cursor()
-        
-        # Limpiamos espacios en blanco por si acaso al escribir
-        cursor.execute('''
-            SELECT id_cliente, rif, razon_social 
-            FROM clientes 
-            WHERE UPPER(rif) = ? AND contrasena = ?
-        ''', (rif.strip().upper(), contrasena.strip()))
-        
-        resultado = cursor.fetchone()
-        conexion.close()
-        return resultado
-    except Exception as e:
-        st.error(f"❌ Error al conectar con la base de datos: {e}")
-        return None
+    # Tipamos los parámetros para evitar alertas de Pylance
+    rif_limpio = rif.strip().upper()
+    pass_limpia = contrasena.strip()
     
+    query = """
+        SELECT id_cliente, rif, razon_social 
+        FROM clientes 
+        WHERE UPPER(rif) = %s AND contrasena = %s
+    """
+    
+    try:
+        # Usamos el bloque 'with' seguro para manejar la conexión y el cursor de Postgres
+        with obtener_conexion() as conexion:
+            with conexion.cursor() as cursor:
+                cursor.execute(query, (rif_limpio, pass_limpia))
+                resultado = cursor.fetchone()
+                return resultado  # Retorna la tupla (id_cliente, rif, razon_social) o None
+    except Exception as e:
+        st.error(f"❌ Error al conectar con la base de datos PostgreSQL: {e}")
+        return None
+#    
 # =========================================================================
 # 🏢 PANEL PRINCIPAL DEL CLIENTE (MÓDULO INDEPENDIENTE)
 # =========================================================================
@@ -73,27 +78,41 @@ def mostrar_interfaz_cliente():
     rif_cliente = st.session_state.get("usuario_cedula") # Reutilizamos la variable de sesión para el RIF
     razon_social = st.session_state.get("usuario_nombre")
     
-    # Consultamos los saldos actualizados directamente de la base de datos
+    # Valores por defecto iniciales por seguridad de tipado
+    dias_credito: int = 15
+    limite_credito: float = 0.0 
+    saldo_pendiente: float = 0.0
+    credito_disponible: float = 0.0    
+
+    # Consultamos los saldos actualizados directamente de la base de datos PostgreSQL
+    query_finanzas = """
+        SELECT dias_credito, limite_credito_usd, saldo_pendiente_usd, credito_disponible_usd 
+        FROM clientes 
+        WHERE id_cliente = %s
+    """
+    
     try:
-        conexion = sqlite3.connect('exprex.db')
-        cursor = conexion.cursor()
-        cursor.execute("SELECT dias_credito, limite_credito_usd, saldo_pendiente_usd, credito_disponible_usd FROM clientes WHERE id_cliente = ?", (id_cliente,))
-        finanzas = cursor.fetchone()
-        conexion.close()
-        
-        dias_credito = finanzas[0] if finanzas else 15
-        limite_credito = finanzas[1] if finanzas else 0.0 
-        saldo_pendiente = finanzas[2] if finanzas else 0.0
-        credito_disponible = finanzas[3] if finanzas else 0.0    
-    except Exception:
-        dias_credito, limite_credito, credito_disponible, saldo_pendiente = 15, 0.0, 0.0, 0.0
+        with obtener_conexion() as conexion:
+            with conexion.cursor() as cursor:
+                cursor.execute(query_finanzas, (id_cliente,))
+                finanzas = cursor.fetchone()
+                
+                if finanzas is not None:
+                    dias_credito = int(finanzas[0]) if finanzas[0] is not None else 15
+                    limite_credito = float(finanzas[1]) if finanzas[1] is not None else 0.0
+                    saldo_pendiente = float(finanzas[2]) if finanzas[2] is not None else 0.0
+                    credito_disponible = float(finanzas[3]) if finanzas[3] is not None else 0.0
+                else:
+                    credito_disponible = limite_credito - saldo_pendiente
+    except Exception as e:
+        # Caída segura en caso de un fallo de red o base de datos
         credito_disponible = limite_credito - saldo_pendiente
 
 
     # -------------------------------------------------------------------------
     # ENCABEZADO Y MÉTRICAS FINANCIERAS
     # -------------------------------------------------------------------------
-    st.header(f"ExpreX - Clientes")
+    st.header("ExpreX - Clientes")
     st.write(f"### 🏢 Panel Corporativo: {razon_social}")
     st.caption(f"RIF: {rif_cliente} | Gestión de Logística y Cuentas por Cobrar ExpreX")
     st.markdown("---")
@@ -127,7 +146,7 @@ def mostrar_interfaz_cliente():
         st.metric(label="📅 Términos de Pago", value=f"{dias_credito} días de crédito")
     
     st.markdown("---")
-
+    #
     # -------------------------------------------------------------------------
     # PESTAÑAS DE TRABAJO
     # -------------------------------------------------------------------------
@@ -143,18 +162,20 @@ def mostrar_interfaz_cliente():
         st.info("Complete los detalles de la carga para que nuestro equipo operativo valide y asigne la unidad.")
         
         # 1. Recuperamos las sucursales de origen del cliente
-        # 1. Recuperamos las sucursales de origen del cliente
+        df_sucursales = pd.DataFrame()
         try:
-            # 💡 Blindaje: Si id_cliente es None, le asignamos 0 o un valor vacío para que no rompa el tipado
+            # 💡 Blindaje Pylance: Si id_cliente es None, le asignamos 0 o un valor vacío para que no rompa el tipado
             id_cliente_seguro = id_cliente if id_cliente is not None else 0
 
-            conexion = sqlite3.connect('exprex.db')
-            df_sucursales = pd.read_sql_query(
-                "SELECT id_sucursal, nombre_agencia, ciudad FROM sucursales WHERE id_cliente = ? AND activa = 'Sí'", 
-                conexion, params=(id_cliente_seguro,)
-            )
-            conexion.close()
-        except Exception:
+            query_sucursales = """
+                SELECT id_sucursal, nombre_agencia, ciudad 
+                FROM sucursales 
+                WHERE id_cliente = %s AND activa = 'Sí'
+            """
+            with obtener_conexion() as conexion:
+                df_sucursales = pd.read_sql_query(query_sucursales, conexion, params=(id_cliente_seguro,))
+        except Exception as e:
+            st.error(f"❌ Error al cargar sucursales: {e}")
             df_sucursales = pd.DataFrame()
 
         if not df_sucursales.empty:
@@ -170,20 +191,21 @@ def mostrar_interfaz_cliente():
                 with col_f1:
                     sucursal_origen = st.selectbox("📍 Sucursal de Origen (Despacho):", options=lista_sucursales, format_func=formatear_sucursal)
                     
-                    direccion_destino = st.text_area("🏁 Dirección de Destino Final:", value=st.session_state.tmp_destino, placeholder="Ej: Almacén Central, Av. Michelena, Valencia, Edo. Carabobo")
+                    direccion_destino = st.text_area("🏁 Dirección de Destino Final:", value=str(st.session_state.tmp_destino), placeholder="Ej: Almacén Central, Av. Michelena, Valencia, Edo. Carabobo")
                     st.markdown("")
                     st.markdown("")
-                    # 🏁 AQUÍ ESTÁ EL BLOQUE DE MATERIALES SEGURO:
+                    
+                    # 🏁 BLOQUE DE MATERIALES SEGURO:
                     opciones_materiales = ["Materiales de Construcción", "Alimentos / Consumo Masivo", "Repuestos / Automotriz", "Línea Blanca / Electrónicos", "Químicos / Materia Prima", "Otros (Especificar en observaciones)"]
                     idx_mat = opciones_materiales.index(st.session_state.tmp_material) if st.session_state.tmp_material in opciones_materiales else 0
                     tipo_material = st.selectbox("📦 Tipo de Material / Mercancía:", opciones_materiales, index=idx_mat)
                     
                     st.markdown("---")
-                    solicitante_nombre = st.text_input("👤 Nombre y Apellido (Quien solicita el servicio):", value=st.session_state.tmp_solicitante, placeholder="Ej: Carlos Pérez")
-                    persona_contacto = st.text_input("👤 Persona de Contacto en Entrega (Destino):", value=st.session_state.tmp_contacto)
+                    solicitante_nombre = st.text_input("👤 Nombre y Apellido (Quien solicita el servicio):", value=str(st.session_state.tmp_solicitante), placeholder="Ej: Carlos Pérez")
+                    persona_contacto = st.text_input("👤 Persona de Contacto en Entrega (Destino):", value=str(st.session_state.tmp_contacto))
                 
                 with col_f2:
-                    # 🏁 AQUÍ ESTÁ EL BLOQUE DE UNIDADES LIMPIO (Sin líneas duplicadas):
+                    # 🏁 BLOQUE DE UNIDADES LIMPIO:
                     opciones_unidades = ["Mini-Truck / Pickup (Hasta 1.5 Ton)", "Camión 350 (Hasta 3.5 Ton)", "Camión 750 / Triton (Hasta 5 Ton)", "Chuto / Gandola (Carga Pesada)"]
                     idx_uni = opciones_unidades.index(st.session_state.tmp_unidad) if st.session_state.tmp_unidad in opciones_unidades else 0
                     tipo_unidad_requerida = st.selectbox("Unidad Requerida:", opciones_unidades, index=idx_uni)
@@ -195,14 +217,14 @@ def mostrar_interfaz_cliente():
                         help="Seleccione Express si el despacho requiere prioridad absoluta de asignación.", horizontal=True
                     )
                     
-                    peso_carga_kg = st.number_input("⚖️ Peso Estimado de la Carga (Kg):", min_value=1.0, value=st.session_state.tmp_peso, step=50.0)
-                    num_pedido = st.text_input("🔢 Número de Pedido / Referencia Interna:", value=st.session_state.tmp_pedido, placeholder="Ej: PED-2026-99")
+                    peso_carga_kg = st.number_input("⚖️ Peso Estimado de la Carga (Kg):", min_value=1.0, value=float(st.session_state.tmp_peso), step=50.0)
+                    num_pedido = st.text_input("🔢 Número de Pedido / Referencia Interna:", value=str(st.session_state.tmp_pedido), placeholder="Ej: PED-2026-99")
                     
                     st.markdown("---")
-                    solicitante_telefono = st.text_input("📞 Teléfono Directo / Extensión:", value=st.session_state.tmp_telefono, placeholder="Ej: 0412-5551234")
-                    telefono_contacto = st.text_input("📞 Teléfono de Contacto en Entrega (Destino):", value=st.session_state.tmp_telefono_contacto)
+                    solicitante_telefono = st.text_input("📞 Teléfono Directo / Extensión:", value=str(st.session_state.tmp_telefono), placeholder="Ej: 0412-5551234")
+                    telefono_contacto = st.text_input("📞 Teléfono de Contacto en Entrega (Destino):", value=str(st.session_state.tmp_telefono_contacto))
                     
-                observaciones = st.text_area("📝 Observaciones o Instrucciones Especiales:", value=st.session_state.tmp_observaciones, placeholder="Ej: Llevar precintos de seguridad, despachar en horario de la mañana...")
+                observaciones = st.text_area("📝 Observaciones o Instrucciones Especiales:", value=str(st.session_state.tmp_observaciones), placeholder="Ej: Llevar precintos de seguridad, despachar en horario de la mañana...")
                 
                 st.markdown("---")
                 boton_solicitar = st.form_submit_button("🚀 Enviar Solicitud de Flete", use_container_width=True, type="primary")
@@ -219,9 +241,9 @@ def mostrar_interfaz_cliente():
                     st.session_state.tmp_pedido = str(num_pedido or "").strip()
                     st.session_state.tmp_telefono = str(solicitante_telefono or "").strip()
                     st.session_state.tmp_telefono_contacto = str(telefono_contacto or "").strip()
-                    st.session_state.tmp_observaciones = (observaciones or "").strip()
+                    st.session_state.tmp_observaciones = str(observaciones or "").strip()
 
-                    # 🛑 VALIDACIONES COMPLETAS (No entran a la base de datos si fallan)
+                    # 🛑 VALIDACIONES COMPLETAS
                     if not str(direccion_destino or "").strip():
                         st.error("❌ Por favor, especifique la dirección de destino final.")
                     elif not str(solicitante_nombre or "").strip() or not str(solicitante_telefono or "").strip():
@@ -229,14 +251,11 @@ def mostrar_interfaz_cliente():
                     elif credito_disponible <= 0:
                         st.error("⚠️ Solicitud No Registrada: Su empresa ha excedido su límite de crédito disponible. Comuníquese con la Administración de ExpreX.")
                     else:
-                        # --- INSERCIÓN SEGURA EN TABLA VIAJES ---
+                        # --- INSERCIÓN SEGURA EN POSTGRESQL ---
                         try:
-                            conexion = sqlite3.connect('exprex.db')
-                            cursor = conexion.cursor()
-                            
                             origen_texto = formatear_sucursal(sucursal_origen)
                             
-                            cursor.execute('''
+                            query_insertar = """
                                 INSERT INTO viajes (
                                     id_cliente, 
                                     id_sucursal_origen, 
@@ -253,25 +272,29 @@ def mostrar_interfaz_cliente():
                                     estatus_viaje,
                                     cliente_solicitante,
                                     telefono_cliente
-                                ) VALUES (?, ?, DATE('now'), ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Solicitado', ?, ?)
-                            ''', (
-                                id_cliente, 
-                                sucursal_origen, 
-                                origen_texto,
-                                st.session_state.tmp_destino, 
-                                st.session_state.tmp_material, 
-                                st.session_state.tmp_viaje,
-                                st.session_state.tmp_peso, 
-                                st.session_state.tmp_contacto,
-                                st.session_state.tmp_telefono_contacto,
-                                st.session_state.tmp_pedido,
-                                st.session_state.tmp_observaciones,
-                                st.session_state.tmp_solicitante,   
-                                st.session_state.tmp_telefono  
-                            ))
+                                ) VALUES (%s, %s, CURRENT_DATE, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'Solicitado', %s, %s)
+                            """
                             
-                            conexion.commit()
-                            conexion.close()
+                            with obtener_conexion() as conexion:
+                                with conexion.cursor() as cursor:
+                                    cursor.execute(query_insertar, (
+                                        id_cliente, 
+                                        sucursal_origen, 
+                                        origen_texto,
+                                        st.session_state.tmp_destino, 
+                                        st.session_state.tmp_material, 
+                                        st.session_state.tmp_viaje,
+                                        st.session_state.tmp_peso, 
+                                        st.session_state.tmp_contacto,
+                                        st.session_state.tmp_telefono_contacto,
+                                        st.session_state.tmp_pedido,
+                                        st.session_state.tmp_observaciones,
+                                        st.session_state.tmp_solicitante,   
+                                        st.session_state.tmp_telefono  
+                                    ))
+                                    # Al usar context managers con psycopg2, se hace commit automático si no hay errores,
+                                    # pero forzarlo explícitamente asegura la persistencia en el pool.
+                                    conexion.commit()
 
                             st.success("🎉 ¡Solicitud de flete registrada con éxito en ExpreX!")
                             
@@ -293,7 +316,7 @@ def mostrar_interfaz_cliente():
             st.warning("⚠️ No se encontraron sucursales activas registradas para su cuenta corporativa. Contacte a soporte de ExpreX.")
 
     # --- PESTAÑA 2: HISTORIAL DIRECTO ---
-    
+    #
     # =========================================================================
     # 📌 PESTAÑA: HISTORIAL DE FLETES (FILTRADO POR MESES Y CABECERAS LIMPIAS)
     # =========================================================================
@@ -320,9 +343,7 @@ def mostrar_interfaz_cliente():
                 a -= 1
             opciones_meses.append((a, m))
             
-        #st.write(list(st.session_state.keys()))
-
-        # Formateamos el selector para que el chofer vea "Julio 2026", "Junio 2026", etc.
+        # Formateamos el selector para que el cliente vea "Julio 2026", "Junio 2026", etc.
         mes_seleccionado = st.selectbox(
             "📅 Seleccione el mes a consultar:",
             options=opciones_meses,
@@ -331,35 +352,30 @@ def mostrar_interfaz_cliente():
         
         # 💡 CONTROL CRÍTICO: Si no hay opciones, evitamos que rompa la app
         if mes_seleccionado is None:
-            import datetime
-            hoy = datetime.date.today()
             mes_seleccionado = (hoy.year, hoy.month)
         
-        # Calculamos la fecha de inicio y fin del mes seleccionado para el SQL
         ano_sel, mes_sel = mes_seleccionado
-        f_inicio_mes = f"{ano_sel}-{mes_sel:02d}-01"
-        if mes_sel == 12:
-            f_fin_mes = f"{ano_sel + 1}-01-01"
-        else:
-            f_fin_mes = f"{ano_sel}-{mes_sel + 1:02d}-01"
             
         try:
-            conexion = sqlite3.connect('exprex.db')
-            
-            # Filtramos el mes comparando directamente 
-            # las cadenas de texto (año y mes) del selector con la columna fecha_despacho.
-            # Además, incluimos TODOS los estatus para que puedas ver el historial completo del mes.
-            filtro_mes_texto = f"{ano_sel}-{mes_sel:02d}-%"
-            
-            df_historial = pd.read_sql_query('''
+            # Optamos por EXTRACT(YEAR...) y EXTRACT(MONTH...) optimizado para PostgreSQL
+            query_historial = """
                 SELECT id_viaje, fecha_despacho, origen, cliente_solicitante, destino, estatus_viaje, tipo_material, num_pedido, 
                        monto_flete_usd, descuento_usd, importe_neto_usd
                 FROM viajes 
-                WHERE id_cliente = ? 
-                  AND fecha_despacho LIKE ?
+                WHERE id_cliente = %s 
+                  AND EXTRACT(YEAR FROM fecha_despacho) = %s
+                  AND EXTRACT(MONTH FROM fecha_despacho) = %s
                 ORDER BY id_viaje DESC
-            ''', conexion, params=(st.session_state.cliente_id, filtro_mes_texto)) 
-            conexion.close()
+            """
+            
+            cliente_id_seguro = st.session_state.get("cliente_id", 0)
+            
+            with obtener_conexion() as conexion:
+                df_historial = pd.read_sql_query(
+                    query_historial, 
+                    conexion, 
+                    params=(cliente_id_seguro, ano_sel, mes_sel)
+                )
         except Exception as e:
             st.error(f"❌ Error al cargar historial filtrado: {e}")
             df_historial = pd.DataFrame()
@@ -391,7 +407,7 @@ def mostrar_interfaz_cliente():
             
             dicc_historial = {}
             for _, row in df_historial.iterrows():
-                id_v = row['id_viaje']
+                id_v = int(row['id_viaje'])
                 pedido = row['num_pedido'] if pd.notna(row['num_pedido']) and str(row['num_pedido']).strip() != "" else "S/N"
                 dicc_historial[id_v] = f"Flete N° {id_v} (Ped: {pedido})"
             
@@ -404,15 +420,15 @@ def mostrar_interfaz_cliente():
             
             if id_historial_sel:
                 try:
-                    conexion = sqlite3.connect('exprex.db')
-                    cursor = conexion.cursor()
-                    cursor.execute('''
+                    query_detalle = """
                         SELECT origen, destino, tipo_material, peso_carga_kg, estatus_viaje, num_pedido, tipo_viaje
                         FROM viajes 
-                        WHERE id_viaje = ?
-                    ''', (id_historial_sel,))
-                    v_det = cursor.fetchone()
-                    conexion.close()
+                        WHERE id_viaje = %s
+                    """
+                    with obtener_conexion() as conexion:
+                        with conexion.cursor() as cursor:
+                            cursor.execute(query_detalle, (id_historial_sel,))
+                            v_det = cursor.fetchone()
                     
                     if v_det:
                         st.info(f"""
@@ -431,7 +447,7 @@ def mostrar_interfaz_cliente():
         if st.button("🏠 Volver al Menú Principal", key="btn_home_hist_cli", use_container_width=True):
             st.session_state["cliente_pagina"] = "Menu Principal"
             st.rerun()
-
+    #
     # =========================================================================
     # PESTAÑA: CONSULTOR INDIVIDUAL DE DESPACHOS (PARA CLIENTES)
     # =========================================================================
@@ -453,11 +469,11 @@ def mostrar_interfaz_cliente():
             
         if dato_busqueda or btn_buscar:
             try:
-                conexion = sqlite3.connect('exprex.db')
-                conexion.row_factory = sqlite3.Row
-                cursor = conexion.cursor()
+                # Importamos el cursor de diccionarios de psycopg2 para mantener la compatibilidad con tu código
+                from psycopg2.extras import RealDictCursor
                 
                 # Buscamos de forma flexible si coincide con id_viaje, num_pedido o num_factura
+                # Convertimos id_viaje a TEXT para evitar errores de tipado si buscan un string
                 sql_rastreo = """
                     SELECT 
                         v.id_viaje,
@@ -477,19 +493,24 @@ def mostrar_interfaz_cliente():
                     JOIN clientes c ON v.id_cliente = c.id_cliente
                     LEFT JOIN sucursales s ON v.id_sucursal_origen = s.id_sucursal
                     JOIN usuarios u ON v.cedula_conductor = u.cedula
-                    WHERE (v.id_viaje = ? OR v.num_pedido LIKE ? OR v.num_factura LIKE ? OR v.cliente_solicitante LIKE ?)
+                    WHERE (CAST(v.id_viaje AS TEXT) = %s 
+                       OR v.num_pedido LIKE %s 
+                       OR v.num_factura LIKE %s 
+                       OR v.cliente_solicitante LIKE %s)
                 """
-                # El LIKE ayuda por si meten espacios o parciales
                 param_like = f"%{dato_busqueda}%"
-                cursor.execute(sql_rastreo, (dato_busqueda, param_like, param_like, param_like))
-                viaje = cursor.fetchone()
-                conexion.close()
+                
+                with obtener_conexion() as conexion:
+                    # Usamos RealDictCursor para poder indexar las columnas por su nombre literal
+                    with conexion.cursor(cursor_factory=RealDictCursor) as cursor:
+                        cursor.execute(sql_rastreo, (dato_busqueda, param_like, param_like, param_like))
+                        viaje = cursor.fetchone()
                 
                 if viaje:
                     st.success(f"📦 ¡Despacho Localizado! - **Viaje #{viaje['id_viaje']}**")
                     
                     # 🚦 BARRA DE PROGRESO VISUAL DEL ESTATUS
-                    estatus = viaje['estatus_viaje']
+                    estatus = str(viaje['estatus_viaje'])
                     
                     # Definimos el porcentaje y el color de la barra según el estatus real
                     if estatus == 'Por Salir':
@@ -530,7 +551,7 @@ def mostrar_interfaz_cliente():
                     if estatus == 'Entregado':
                         st.markdown("---")
                         st.markdown("#### 📸 Soporte Digital de Entrega")
-                        ruta_foto = viaje['foto_evidencia']
+                        ruta_foto = str(viaje['foto_evidencia']) if viaje['foto_evidencia'] else ""
                         
                         if ruta_foto and os.path.exists(ruta_foto):
                             # Abrimos y mostramos la foto firmada
@@ -545,7 +566,7 @@ def mostrar_interfaz_cliente():
                     
             except Exception as e:
                 st.error(f"❌ Error al procesar el rastreo del despacho: {e}")
-
+    #
     # =========================================================================
     # 📌 SECCIÓN DE AYUDA Y SOPORTE EN LA BARRA LATERAL
     # =========================================================================
@@ -569,7 +590,7 @@ def mostrar_interfaz_cliente():
             """)
             
             # Pie de página sutil con la versión que congelamos con Engrampa
-            st.caption("ExpreX v1.6.3 • 2026 🚛")
+            st.caption("ExpreX v1.7.5 • 2026 🚛")
 
         # --- OPCIÓN 2: MARCO LEGAL Y OPERATIVO ---
         with st.expander("📄 Marco Legal y Políticas", expanded=False):
