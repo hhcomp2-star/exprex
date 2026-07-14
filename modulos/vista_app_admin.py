@@ -13,8 +13,8 @@ from modulos.reportes_financieros import mostrar_modulo_reportes
 from modulos.operaciones_viajes import mostrar_modulo_operaciones
 from modulos.reporte_general import mostrar_modulo_reporte_general
 from modulos.mantenimiento_sistema import mostrar_modulo_mantenimiento
-from modulos.utils import contar_viajes_solicitados_global, reproducir_alerta_victoria
-
+from modulos.utils import contar_viajes_solicitados_global
+from modulos.utils import reproducir_alerta_victoria
 
 # ===============================================================================
 # 🛠️ FUNCIONES AUXILIARES Y SIMULADORES (Ajusta las importaciones si ya existen)

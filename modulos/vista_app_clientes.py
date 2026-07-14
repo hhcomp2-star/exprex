@@ -1,13 +1,19 @@
 import streamlit as st
 import os
 import time
+import sys
 import datetime as dt
 import pandas as pd
 import streamlit.components.v1 as components
 
+
+ruta_raiz = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if ruta_raiz not in sys.path:
+    sys.path.insert(0, ruta_raiz)
+
 # Importamos la función de conexión a PostgreSQL que creamos para tu proyecto
-  # <-- Asegúrate de que este import coincida con tu archivo de conexión
 from modulos.utils import obtener_conexion_db
+
 # --- CARGAR TEXTO LEGAL DESDE LA CARPETA MODULOS ---
 ruta_terminos = os.path.join("modulos", "terminos.txt")
 
@@ -37,7 +43,7 @@ def verificar_cliente_b2b(rif: str, contrasena: str):
     
     try:
         # Usamos el bloque 'with' seguro para manejar la conexión y el cursor de Postgres
-        with obtener_conexion() as conexion:
+        with obtener_conexion_db() as conexion:
             with conexion.cursor() as cursor:
                 cursor.execute(query, (rif_limpio, pass_limpia))
                 resultado = cursor.fetchone()
@@ -92,7 +98,7 @@ def mostrar_interfaz_cliente():
     """
     
     try:
-        with obtener_conexion() as conexion:
+        with obtener_conexion_db() as conexion:
             with conexion.cursor() as cursor:
                 cursor.execute(query_finanzas, (id_cliente,))
                 finanzas = cursor.fetchone()
@@ -172,7 +178,7 @@ def mostrar_interfaz_cliente():
                 FROM sucursales 
                 WHERE id_cliente = %s AND activa = 'Sí'
             """
-            with obtener_conexion() as conexion:
+            with obtener_conexion_db() as conexion:
                 df_sucursales = pd.read_sql_query(query_sucursales, conexion, params=(id_cliente_seguro,))
         except Exception as e:
             st.error(f"❌ Error al cargar sucursales: {e}")
@@ -275,7 +281,7 @@ def mostrar_interfaz_cliente():
                                 ) VALUES (%s, %s, CURRENT_DATE, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'Solicitado', %s, %s)
                             """
                             
-                            with obtener_conexion() as conexion:
+                            with obtener_conexion_db() as conexion:
                                 with conexion.cursor() as cursor:
                                     cursor.execute(query_insertar, (
                                         id_cliente, 
@@ -370,7 +376,7 @@ def mostrar_interfaz_cliente():
             
             cliente_id_seguro = st.session_state.get("cliente_id", 0)
             
-            with obtener_conexion() as conexion:
+            with obtener_conexion_db() as conexion:
                 df_historial = pd.read_sql_query(
                     query_historial, 
                     conexion, 
@@ -425,7 +431,7 @@ def mostrar_interfaz_cliente():
                         FROM viajes 
                         WHERE id_viaje = %s
                     """
-                    with obtener_conexion() as conexion:
+                    with obtener_conexion_db() as conexion:
                         with conexion.cursor() as cursor:
                             cursor.execute(query_detalle, (id_historial_sel,))
                             v_det = cursor.fetchone()
@@ -500,7 +506,7 @@ def mostrar_interfaz_cliente():
                 """
                 param_like = f"%{dato_busqueda}%"
                 
-                with obtener_conexion() as conexion:
+                with obtener_conexion_db() as conexion:
                     # Usamos RealDictCursor para poder indexar las columnas por su nombre literal
                     with conexion.cursor(cursor_factory=RealDictCursor) as cursor:
                         cursor.execute(sql_rastreo, (dato_busqueda, param_like, param_like, param_like))

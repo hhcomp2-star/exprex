@@ -290,4 +290,4 @@ else:
         except Exception as e:
             st.error(f"Error al cargar el panel de Cliente: {e}")
 
-st.caption("© ExpreX Logística. 2026 - Versión 1.7.1 • 🔑 Persistencia Activada")
+st.caption("© ExpreX Logística. 2026 - Versión 1.7.5 • 🔑 Persistencia Activada")
