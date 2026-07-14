@@ -19,7 +19,7 @@ for ruta in [ruta_raiz, ruta_modulos]:
 # Ahora las importaciones se ejecutarán con total normalidad en tu PC y en la nube
 from modulos.rec_cont import mostrar_modulo_recuperar_contrasena
 from modulos.nvo_reg import mostrar_modulo_registro
-#from modulos.utils import obtener_conexion_db  # Usamos tu pool unificado de Postgres
+from modulos.utils import obtener_conexion_db  # Usamos tu pool unificado de Postgres
 
 # Configuración de la página
 st.set_page_config(page_title="ExpreX Logística", page_icon="logo_exprex_5.png", layout="centered")
@@ -279,7 +279,6 @@ else:
             from modulos.vista_app_choferes import renderizar_panel_conductor
             renderizar_panel_conductor(st.session_state.usuario_cedula)
         except Exception as e:
-            st.info("Estoy aquí: Pidiendo credenciales en main)")
             st.error(f"Error al cargar el panel de Conductor: {e}")
             
     # 3. EVALUACIÓN DE CLIENTE
