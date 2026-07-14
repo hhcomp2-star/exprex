@@ -2,3 +2,5 @@ exprex.db
 __pycache__/
 .streamlit/
 *.pyc
+env/
+env/
