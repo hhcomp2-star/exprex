@@ -5,7 +5,7 @@ import psycopg2
 import time
 import os
 import sys
-
+import base64
 
 def obtener_conexion_db():
     """Busca la variable de entorno 'DATABASE_URL' en Railway de forma automática.
