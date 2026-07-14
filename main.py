@@ -6,8 +6,15 @@ import time
 from modulos.rec_cont import mostrar_modulo_recuperar_contrasena
 from modulos.nvo_reg import mostrar_modulo_registro
 
+# Esta DEBE ser la primera instrucción de Streamlit en el archivo
+#st.set_page_config(
+#    page_title="ExpreX Logística",
+#    page_icon="exprex_logo_2.png",  # Aquí llamamos a tu imagen para la pestaña
+#    layout="wide"          # O la configuración que ya tengas armada
+#)
+
 # Configuración de la página (Debe ser la primera línea de Streamlit)
-st.set_page_config(page_title="ExpreX Logística", page_icon="🚛", layout="centered")
+st.set_page_config(page_title="ExpreX Logística", page_icon="exprex_logo_2.png", layout="centered")
 
 if "ultima_sincronizacion" not in st.session_state:
     st.session_state.ultima_sincronizacion = 0
@@ -242,20 +249,5 @@ else:
             mostrar_interfaz_cliente()
         except Exception as e:
             st.error(f"Error al cargar el panel de Cliente: {e}")
-            #st.rerun()    
-
-# ==========================================================================================================    
-
-    # Botón limpio para Cerrar Sesión destruyendo la memoria interna
-    #if st.button("Cerrar Sesión", use_container_width=True):
-    #    st.session_state.autenticado = False
-    #    st.session_state.usuario_cedula = ""
-    #    st.session_state.usuario_nombre = ""
-    #    st.session_state.usuario_rol = ""
-    #    st.session_state.cliente_id = None
-    #    st.session_state.vista_login = "login"
-    #    st.rerun()
-
-
 
 st.caption("© ExpreX Logística. 2026 - Versión 1.6.3")
