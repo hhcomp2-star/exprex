@@ -85,7 +85,7 @@ def mostrar_panel_administrador():
         st.write("Bienvenido al sistema de gestión de transporte de materiales livianos.")
         
         # Validación de la ruta de la imagen
-        ruta_logo = "modulos/logo_exprex_4.png"
+        ruta_logo = "modulos/logo_exprex_5.png"
         if os.path.exists(ruta_logo):
             st.image(ruta_logo)
         else:
