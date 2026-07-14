@@ -5,17 +5,15 @@ import time
 import os
 import sys
 
-# 🎯 FORZAR A PYTHON A ENCONTRAR LA CARPETA MODULOS EN CUALQUIER ENTORNO
-carpeta_actual = os.path.dirname(__file__)
-if carpeta_actual not in sys.path:
-    sys.path.insert(0, carpeta_actual)
+# 🔍 CONTROL DE RUTAS CRÍTICO
+ruta_raiz = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if ruta_raiz not in sys.path:
+    sys.path.insert(0, ruta_raiz)
 
-# Ahora la importación directa funcionará de forma idéntica en tu PC y en Railway
-try:
-    from utils import contar_viajes_pendientes_chofer, reproducir_alerta_victoria, obtener_conexion_db
-except ModuleNotFoundError:
-    from modulos.utils import contar_viajes_pendientes_chofer, reproducir_alerta_victoria, obtener_conexion_db
-# --- CARGAR TEXTO LEGAL DESDE LA CARPETA MODULOS ---
+# E importas desde el paquete modulos
+from modulos.utils import obtener_conexion_db, contar_viajes_por_salir, reproducir_alerta_victoria
+
+
 ruta_terminos = os.path.join("modulos", "terminos.txt")
 
 try:
@@ -45,7 +43,6 @@ def verificar_vehiculo_propio(cedula_chofer):
     
     return False
 
-
 def renderizar_panel_conductor(cedula_conductor):
     # Nota: Quitamos el parámetro personal_base_datos='exprex.db' porque ahora va a la nube
 
@@ -57,8 +54,9 @@ def renderizar_panel_conductor(cedula_conductor):
     if st.button("🔄 Actualizar y Buscar Nuevos Fletes", use_container_width=True):
         cedula = st.session_state.get("cedula_chofer") 
 
-        fletes_nuevos = contar_viajes_pendientes_chofer(cedula)
-
+        cedula_segura = str(cedula) if cedula is not None else ""
+        fletes_nuevos = contar_viajes_por_salir(cedula_segura)
+        
         if fletes_nuevos > 0:
             reproducir_alerta_victoria() # ¡Suena la fanfarria en el celular!
             st.success(f"🚨 ¡Atención! Te asignaron {fletes_nuevos} flete(s) nuevo(s).")
