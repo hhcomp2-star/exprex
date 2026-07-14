@@ -5,13 +5,32 @@ import time
 import os
 import sys
 
+
+def obtener_conexion_db():
+    """Busca la variable de entorno 'DATABASE_URL' en Railway de forma automática.
+
+    Si estás en tu PC local, utiliza la URL pública que configuraste para la
+    migración.
+    """
+    # 🛠️ CORRECCIÓN: Agregadas las comillas obligatorias a la URL para evitar el SyntaxError
+    DATABASE_URL = os.environ.get(
+        "DATABASE_URL",
+        "postgresql://postgres:GEwvrkHjgplcirKtSztYrISoKEqcBdXC@tokaido.proxy.rlwy.net:42381/railway",
+    )
+
+    # Conexión segura con SSL requerido para PostgreSQL en la nube
+    conn = psycopg2.connect(DATABASE_URL, sslmode="require")
+    return conn
+
+
+
 # 🔍 CONTROL DE RUTAS CRÍTICO
-ruta_raiz = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if ruta_raiz not in sys.path:
-    sys.path.insert(0, ruta_raiz)
+#ruta_raiz = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+#if ruta_raiz not in sys.path:
+#    sys.path.insert(0, ruta_raiz)
 
 # E importas desde el paquete modulos
-from modulos.utils import obtener_conexion_db, contar_viajes_por_salir, reproducir_alerta_victoria
+from modulos.utils import obtener_conexion_db, reproducir_alerta_victoria
 
 
 ruta_terminos = os.path.join("modulos", "terminos.txt")
