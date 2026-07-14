@@ -384,7 +384,7 @@ def mostrar_interfaz_cliente():
                     AND fecha_despacho LIKE %s
                     ORDER BY id_viaje DESC
                 ''', conexion, params=(st.session_state.cliente_id, filtro_mes_texto)) 
-                conexion.close()
+                #conexion.close()
         except Exception as e:
             st.error(f"❌ Error al cargar historial filtrado: {e}")
             df_historial = pd.DataFrame()
