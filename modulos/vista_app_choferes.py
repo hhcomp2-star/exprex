@@ -46,7 +46,7 @@ def verificar_vehiculo_propio(cedula_chofer):
 
 def renderizar_panel_conductor(cedula_conductor):
     # Nota: Quitamos el parámetro personal_base_datos='exprex.db' porque ahora va a la nube
-    st.info("Ando por aquí: Renderiza panesl conductor")
+    
     # Colocar aquí para la barra lateral del Chofer (se despliega de lado en el tlf)
     tasa = st.session_state.get('tasa_bcv', '0.00')
     st.sidebar.success(f"Tasa BCV activa: {tasa} Bs.")
@@ -282,9 +282,11 @@ def renderizar_panel_conductor(cedula_conductor):
 
             # 🔄 BOTÓN DE RETORNO AL MENÚ PRINCIPAL
             st.write("---")
-            if st.button("🏠 Volver al Menú Principal", key="btn_home_comb", use_container_width=True):
-                st.session_state["chofer_pagina"] = "Menu Principal"
-                st.rerun()
+            st.caption("💬 Para volver al inicio pulse o haga tap en la pestaña Fletes Activos")
+            
+            #if st.button("🏠 Volver al Menú Principal", key="btn_home_comb", use_container_width=True):
+            #    st.session_state["chofer_pagina"] = "Menu Principal"
+            #    st.rerun()
 
     # =========================================================================
     # 📌 PESTAÑA 3: HISTORIAL DE FLETES (FILTRADO POR MESES Y CABECERAS LIMPIAS)
