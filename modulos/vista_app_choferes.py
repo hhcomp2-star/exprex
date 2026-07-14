@@ -4,9 +4,7 @@ import datetime as dt
 import time
 import os
 from modulos.utils import contar_viajes_pendientes_chofer, reproducir_alerta_victoria
-
-# 🛠️ IMPORTAMOS TU FUNCIÓN CENTRALIZADA DE CONEXIÓN
-from utils import obtener_conexion_db 
+from modulos.utils import obtener_conexion_db
 
 # --- CARGAR TEXTO LEGAL DESDE LA CARPETA MODULOS ---
 ruta_terminos = os.path.join("modulos", "terminos.txt")
