@@ -86,10 +86,11 @@ def mostrar_panel_administrador():
         
         # Validación de la ruta de la imagen
         ruta_logo = "modulos/logo_exprex_5.png"
-        if os.path.exists(ruta_logo):
+        col_izq, col_centro, col_der = st.columns([1, 2, 1])
+        if os.path.exists(ruta_logo, use_continer_width=True):
             st.image(ruta_logo)
         else:
-            st.info("Logo de ExpreX — (Colocar imagen Flete_Flash_Logo_2.png)")
+            st.info("Logo de ExpreX — (Colocar imagen logo_exprex_5.png)")
             
         st.info("Selecciona una opción en el menú izquierdo para empezar a trabajar.")
         
