@@ -1,103 +1,133 @@
 import streamlit as st
-import sqlite3
 import os
-import shutil
+import io
+import zipfile
+import pandas as pd
 from datetime import datetime
+from typing import Any
 
-# Importamos la función de la consola de administración desde tu otro archivo
-# Recuerda crear el archivo 'admin_bd.py' con el código de la consola en la misma carpeta
+# Asumo que tienes un módulo de conexión a tu base de datos de PostgreSQL en Railway
+# Por ejemplo: de tu modulo_conexion import obtener_conexion_db
+# (Ajusta la importación según cómo estructuraste la conexión a PostgreSQL)
+try:
+    # Reemplaza esto con tu función real de conexión a PostgreSQL
+    from modulos.utils import obtener_conexion_db  
+except ImportError:
+    # Definimos una función simulada por si acaso
+    def obtener_conexion_db() -> Any:
+        st.error("⚠️ No se pudo importar la función de conexión a PostgreSQL.")
+        return None
+
 try:
     from modulos.admin_bd import seccion_administrador_tablas
 except ImportError:
-    # Si aún no has creado el archivo admin_bd.py, definimos una función temporal para que no rompa la app
     def seccion_administrador_tablas():
         st.warning("⚠️ El archivo `admin_bd.py` no se encuentra en el directorio del proyecto.")
 
-def mostrar_modulo_mantenimiento():
-    st.subheader("🛠️ Mantenimiento y Seguridad del Sistema")
+def generar_respaldo_csv():
+    """
+    Obtiene todas las tablas de PostgreSQL y las empaqueta en un archivo ZIP 
+    con formato CSV para que Hector pueda abrirlas en LibreOffice Calc.
+    """
+    conn = obtener_conexion_db()
+    if not conn:
+        return None
     
-    # =========================================================================
-    # 📑 CREACIÓN DE LAS PESTAÑAS (TABS)
-    # =========================================================================
+    # Creamos un archivo temporal en memoria RAM
+    buffer_memoria = io.BytesIO()
+    
+    try:
+        # 1. Obtener la lista de tablas de la base de datos (excluyendo las del sistema)
+        query_tablas = """
+            SELECT table_name 
+            FROM information_schema.tables 
+            WHERE table_schema = 'public' 
+              AND table_type = 'BASE TABLE';
+        """
+        tablas = pd.read_sql(query_tablas, conn)['table_name'].tolist()
+        
+        if not tablas:
+            st.warning("⚠️ No se encontraron tablas activas en la base de datos.")
+            conn.close()
+            return None
+        
+        # 2. Creamos el archivo ZIP en memoria
+        with zipfile.ZipFile(buffer_memoria, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+            for tabla in tablas:
+                # Leemos cada tabla directamente a un DataFrame de Pandas
+                df = pd.read_sql(f"SELECT * FROM {tabla};", conn)
+                
+                # Convertimos el DataFrame a CSV codificado en UTF-8
+                csv_data = df.to_csv(index=False, encoding='utf-8')
+                
+                # Guardamos el CSV dentro del archivo ZIP
+                zip_file.writestr(f"{tabla}.csv", csv_data)
+                
+        conn.close()
+        buffer_memoria.seek(0)
+        return buffer_memoria
+        
+    except Exception as e:
+        st.error(f"❌ Error al extraer los datos: {e}")
+        if conn:
+            conn.close()
+        return None
+
+
+def mostrar_modulo_mantenimiento():
+    st.subheader("🛠️ Mantenimiento y Seguridad del Sistema (Nube Railway)")
+    
     tab_respaldos, tab_consola_bd = st.tabs(["💾 Respaldos de Seguridad", "🗄️ Consola de Base de Datos"])
     
     # -------------------------------------------------------------------------
-    # PESTAÑA 1: RESPALDOS DE SEGURIDAD (Tu código original)
+    # PESTAÑA 1: RESPALDOS DE SEGURIDAD (Rediseñada para la nube)
     # -------------------------------------------------------------------------
     with tab_respaldos:
-        st.write("### 💾 Respaldo de Base de Datos (Backup)")
+        st.write("### 💾 Respaldo de Base de Datos (PostgreSQL)")
         st.markdown("""
-        Este módulo te permite generar una copia exacta y segura de toda la información de **ExpreX** (viajes, gastos, vehículos y configuraciones) en la carpeta local que tú elijas de tu entorno Linux Mint.
+        Al estar en **Railway**, tu base de datos PostgreSQL está protegida en la nube. Sin embargo, 
+        siempre es una excelente práctica tener copias de seguridad locales en tu computador.
         """)
         
-        db_produccion = "exprex.db"
+        # --- SECCIÓN A: Descarga local en CSV para LibreOffice Calc ---
+        st.markdown("#### 📥 Opción 1: Descargar tablas activas en formato CSV (Local)")
+        st.info("Este botón extraerá toda la información actual de la base de datos en tiempo real y generará un archivo `.zip` con un archivo `.csv` para cada tabla, listo para que lo uses en **LibreOffice Calc**.")
         
-        if not os.path.exists(db_produccion):
-            st.error(f"❌ No se encontró la base de datos activa `{db_produccion}` en la raíz del proyecto.")
-        else:
-            tamaño_kb = os.path.getsize(db_produccion) / 1024
-            ultima_mod = datetime.fromtimestamp(os.path.getmtime(db_produccion)).strftime('%d/%m/%Y %I:%M %p')
-            
-            col_info1, col_info2 = st.columns(2)
-            with col_info1:
-                st.info(f"📁 **Base de datos activa:** `{os.path.abspath(db_produccion)}`")
-            with col_info2:
-                st.info(f"📊 **Tamaño actual:** `{tamaño_kb:.2f} KB` | **Último cambio:** `{ultima_mod}`")
-                
-            st.subheader("⚙️ Configurar Destino del Respaldo")
-            
-            ruta_sugerida = f"/home/hector/Mi_Nube_MEGA/respaldos_exprex"
-            
-            ruta_destino = st.text_input(
-                "📂 Especifica la ruta absoluta de la carpeta contenedora:", 
-                value=ruta_sugerida,
-                placeholder="Ejemplo: /home/hector/Documentos/BackupsExprex",
-                key="input_ruta_backup" # Agregamos un key único por seguridad de renderizado
+        # Botón dinámico de descarga de Streamlit (el procesamiento ocurre en la RAM del servidor y se descarga al navegador)
+        # Esto evita problemas de escritura de archivos en el disco de Railway.
+        respaldo_zip = generar_respaldo_csv()
+        
+        if respaldo_zip:
+            ahora_str = datetime.now().strftime("%Y%m%d_%H%M%S")
+            st.download_button(
+                label="📥 Descargar todas las tablas (.ZIP)",
+                data=respaldo_zip,
+                file_name=f"exprex_respaldo_csv_{ahora_str}.zip",
+                mime="application/zip",
+                use_container_width=True
             )
+        else:
+            st.warning("⚠️ No se pudo preparar la descarga. Verifica la conexión con PostgreSQL.")
             
-            st.caption("💡 *Nota: Si la carpeta que escribes no existe en tu disco, el sistema intentará crearla automáticamente por ti.*")
-            st.markdown("<br>", unsafe_allow_html=True)
-            
-            btn_respaldar = st.button("💾 Generar Copia de Seguridad Ahora", type="primary", use_container_width=True)
-            
-            if btn_respaldar:
-                if not ruta_destino.strip():
-                    st.error("❌ Por favor, especifica una ruta de carpeta válida.")
-                else:
-                    try:
-                        carpeta_limpia = ruta_destino.strip()
-                        if not os.path.exists(carpeta_limpia):
-                            os.makedirs(carpeta_limpia, exist_ok=True)
-                        
-                        ahora_str = datetime.now().strftime("%Y%m%d_%H%M%S")
-                        nombre_respaldo = f"exprex_backup_{ahora_str}.db"
-                        ruta_completa_respaldo = os.path.join(carpeta_limpia, nombre_respaldo)
-                        
-                        con_origen = sqlite3.connect(db_produccion)
-                        con_destino = sqlite3.connect(ruta_completa_respaldo)
-                        
-                        with con_destino:
-                            con_origen.backup(con_destino)
-                            
-                        con_destino.close()
-                        con_origen.close()
-                        
-                        st.success(f"✅ **¡Respaldo creado con éxito total!**")
-                        st.markdown(f"""
-                        * **Archivo generado:** `{nombre_respaldo}`
-                        * **Ubicación exacta:** `{os.path.abspath(ruta_completa_respaldo)}`
-                        
-                        Ya puedes verificar la carpeta desde tu gestor de archivos de Linux Mint. ¡Datos protegidos!
-                        """)                
-                    except Exception as e:
-                        st.error(f"❌ Ocurrió un error al intentar escribir en la ruta especificada: {e}")
-                        st.info("Verifica que tengas permisos de escritura en la carpeta seleccionada.")
-
+        st.markdown("<hr>", unsafe_allow_html=True)
+        
+        # --- SECCIÓN B: Instrucciones para respaldos completos de base de datos ---
+        st.markdown("#### ☁️ Opción 2: Respaldos automáticos y completos (En Railway)")
+        st.markdown("""
+        Para realizar una copia de seguridad estructural completa (un archivo `.sql` restaurable):
+        
+        1. **Entra a tu panel de Railway** y selecciona tu proyecto de **ExpreX**.
+        2. Haz clic en el servicio de **PostgreSQL**.
+        3. Dirígete a la pestaña de **Backups** (Copias de seguridad).
+        4. Allí verás los respaldos automáticos diarios y podrás generar un respaldo manual con un solo clic para descargarlo a tu carpeta de copias de seguridad en Linux Mint.
+        """)
+        
     # -------------------------------------------------------------------------
     # PESTAÑA 2: CONSOLA DE BASE DE DATOS (Módulo de administrador)
     # -------------------------------------------------------------------------
     with tab_consola_bd:
-        # Llamamos a la función importada que maneja la seguridad y la edición de tablas
+        # Al ejecutar esto, asegúrate de que el código interno de 'seccion_administrador_tablas'
+        # use 'obtener_conexion_db()' de PostgreSQL en lugar de 'sqlite3.connect()'
         seccion_administrador_tablas()
 
     # =========================================================================
