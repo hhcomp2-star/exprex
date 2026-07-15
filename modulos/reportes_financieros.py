@@ -1,7 +1,9 @@
 import streamlit as st
-import sqlite3
 import pandas as pd
 from datetime import datetime
+
+# Importamos la función centralizada de conexión
+from modulos.utils import obtener_conexion_db
 
 def mostrar_modulo_reportes():
     st.write("### 📊 Tablero de Control y Distribución de Ingresos")
@@ -32,41 +34,51 @@ def mostrar_modulo_reportes():
     f_fin_str = fecha_fin.strftime("%Y-%m-%d")
 
     # =========================================================================
-    # 💾 PROCESAMIENTO DE DATOS EN BD (Combustible Incluido)
+    # 💾 PROCESAMIENTO DE DATOS EN BD (MIGRADO A POSTGRESQL)
     # =========================================================================
+   
     try:
-        conexion = sqlite3.connect('exprex.db')
-        cursor = conexion.cursor()
-        
-        # 1. Ingresos por servicios
-        sql_viajes = "SELECT SUM(beneficio_exprex_usd) FROM viajes WHERE (estatus_viaje = 'Entregado' OR estatus_viaje = 'Completado') AND fecha_despacho BETWEEN ? AND ?"
-        cursor.execute(sql_viajes, (f_inicio_str, f_fin_str))
-        total_servicios = cursor.fetchone()[0]
-        total_servicios = float(total_servicios) if total_servicios else 0.0
-        
-        # 2. Gastos operativos comunes (Tabla gastos)
-        sql_gastos = "SELECT SUM(monto_usd) FROM gastos WHERE fecha BETWEEN ? AND ?"
-        cursor.execute(sql_gastos, (f_inicio_str, f_fin_str))
-        total_gastos = cursor.fetchone()[0]
-        total_gastos = float(total_gastos) if total_gastos else 0.0
-        
-        # 3. ⛽ NUEVO: Consumo de combustible acumulado en el período
-        sql_combustible = "SELECT SUM(costo_usd) FROM control_combustible WHERE fecha BETWEEN ? AND ?"
-        cursor.execute(sql_combustible, (f_inicio_str, f_fin_str))
-        total_combustible = cursor.fetchone()[0]
-        total_combustible = float(total_combustible) if total_combustible else 0.0
+        # Usamos el doble 'with' para autogestionar la conexión y el cursor
+        with obtener_conexion_db() as conexion:
+            with conexion.cursor() as cursor:
+                
+                # 1. Ingresos por servicios
+                sql_viajes = """
+                    SELECT SUM(beneficio_exprex_usd) 
+                    FROM viajes 
+                    WHERE (estatus_viaje = 'Entregado' OR estatus_viaje = 'Completado') 
+                      AND fecha_despacho BETWEEN %s AND %s
+                """
+                cursor.execute(sql_viajes, (f_inicio_str, f_fin_str))
+                fila_servicios = cursor.fetchone()
+                # Extraemos el valor de la tupla primero de forma segura
+                valor_servicios = fila_servicios[0] if fila_servicios else None
+                total_servicios = float(valor_servicios) if valor_servicios is not None else 0.0
+                
+                # 2. Gastos operativos comunes
+                sql_gastos = "SELECT SUM(monto_usd) FROM gastos WHERE fecha BETWEEN %s AND %s"
+                cursor.execute(sql_gastos, (f_inicio_str, f_fin_str))
+                fila_gastos = cursor.fetchone()
+                valor_gastos = fila_gastos[0] if fila_gastos else None
+                total_gastos = float(valor_gastos) if valor_gastos is not None else 0.0
+                
+                # 3. ⛽ Consumo de combustible acumulado
+                sql_combustible = "SELECT SUM(costo_usd) FROM control_combustible WHERE fecha BETWEEN %s AND %s"
+                cursor.execute(sql_combustible, (f_inicio_str, f_fin_str))
+                fila_combustible = cursor.fetchone()
+                valor_combustible = fila_combustible[0] if fila_combustible else None
+                total_combustible = float(valor_combustible) if valor_combustible is not None else 0.0
 
-        # 4. Gastos operativos en Viaje (Tabla gastos_operativos_viaje).
-        sql_gastos_viaje = "SELECT SUM(monto_usd) FROM gastos_operativos_viaje WHERE fecha BETWEEN ? AND ?"
-        cursor.execute(sql_gastos_viaje, (f_inicio_str, f_fin_str))
-        total_gastos_viaje = cursor.fetchone()[0]
-        total_gastos_viaje = float(total_gastos_viaje) if total_gastos_viaje else 0.0
+                # 4. Gastos operativos en Viaje
+                sql_gastos_viaje = "SELECT SUM(monto_usd) FROM gastos_operativos_viaje WHERE fecha BETWEEN %s AND %s"
+                cursor.execute(sql_gastos_viaje, (f_inicio_str, f_fin_str))
+                fila_gastos_viaje = cursor.fetchone()
+                valor_gastos_viaje = fila_gastos_viaje[0] if fila_gastos_viaje else None
+                total_gastos_viaje = float(valor_gastos_viaje) if valor_gastos_viaje is not None else 0.0
 
-        conexion.close()
     except Exception as e:
-        st.error(f"Error al conectar a la base de datos: {e}")
+        st.error(f"Error al conectar o consultar la base de datos: {e}")
         return
-
     # Matemática Financiera Central (Ajustada con Egreso Real)
     otros_ingresos = 0.0  
     total_ingresos = total_servicios + otros_ingresos
@@ -148,7 +160,7 @@ def mostrar_modulo_reportes():
     """, unsafe_allow_html=True)
 
     # =========================================================================
-    # 📋 BITÁCORA DETALLADA DE DISTRIBUCIÓN DEL INGRESO (Actualizada)
+    # 📋 BITÁCORA DETALLADA DE DISTRIBUCIÓN DEL INGRESO
     # =========================================================================
     st.markdown("---")
     st.write("#### 🧾 Resumen Analítico de Caja")
@@ -160,7 +172,7 @@ def mostrar_modulo_reportes():
             "(=) Total Ingresos Brutos", 
             "(-) Gastos de Operación (Tabla Gastos)", 
             "(-) Gastos de Viaje (Tabla Gastos Operativos Viaje)",
-            "(-) Gasto de Combustible (Flota)", # ⛽ Nueva fila visible
+            "(-) Gasto de Combustible (Flota)", 
             "(=) SALDO NETO A REPARTIR"
         ],
         "Monto ($ USD)": [
@@ -168,8 +180,8 @@ def mostrar_modulo_reportes():
             f"$ {otros_ingresos:,.2f}",
             f"$ {total_ingresos:,.2f}",
             f"$ {total_gastos:,.2f}",
-            f"$ {total_gastos_viaje:,.2f}", # Monto mapeado de la nueva consulta
-            f"$ {total_combustible:,.2f}", # Monto mapeado de la nueva consulta
+            f"$ {total_gastos_viaje:,.2f}", 
+            f"$ {total_combustible:,.2f}", 
             f"$ {resultado_operacion:,.2f}"
         ]
     }
