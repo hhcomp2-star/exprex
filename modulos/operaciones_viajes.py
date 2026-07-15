@@ -151,8 +151,6 @@ def mostrar_modulo_operaciones():
                     index_chofer_preasig = lista_cedulas_choferes.index(chofer_preasig) if chofer_preasig in lista_cedulas_choferes else 0
                 except (ValueError, KeyError):
                     index_chofer_preasig = 0
-                # FORMULARIO DE DESPACHO INTERACTIVO
-                st.write("#### 🛠️ Completar Información Logística de Salida")
                 
                 col1, col2 = st.columns(2)
                 
@@ -173,10 +171,6 @@ def mostrar_modulo_operaciones():
                     import datetime
                     fecha_despacho = st.date_input("📅 Fecha de Salida Real", value=datetime.date.today()).strftime("%Y-%m-%d")
                     num_factura = st.text_input("🧾 Número de Factura / Control Interno (Opcional)").strip().upper()
-
-                    #import datetime
-                    #fecha_despacho = st.date_input("📅 Fecha de Salida Real", value=datetime.date.today()).strftime("%Y-%m-%d")
-                    #num_factura = st.text_input("🧾 Número de Factura / Control Interno (Opcional)").strip().upper()
 
                 with col2:
                     col_dest_lat, col_dest_lon = st.columns(2)
