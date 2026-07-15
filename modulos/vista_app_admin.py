@@ -86,7 +86,7 @@ def mostrar_panel_administrador():
         
         # Validación de la ruta de la imagen
         ruta_logo = "modulos/logo_exprex_5.png"
-        col_izq, col_centro, col_der = st.columns([1, 2, 1])
+        col_izq, col_centro, col_der = st.columns([1.5, 1, 1.5])
         if os.path.exists(ruta_logo):
             st.image(ruta_logo, use_container_width=True)
         else:
