@@ -22,7 +22,7 @@ from modulos.nvo_reg import mostrar_modulo_registro
 from modulos.utils import obtener_conexion_db  # Usamos tu pool unificado de Postgres
 
 # Configuración de la página
-st.set_page_config(page_title="ExpreX Logística", page_icon="logo_exprex_5.png", layout="centered")
+st.set_page_config(page_title="ExpreX Logística", page_icon="exprex/modulos/logo_exprex_5.png", layout="centered")
 
 def obtener_conexion_db():
     """Busca la variable de entorno 'DATABASE_URL' en Railway de forma automática.
