@@ -1,7 +1,7 @@
 import streamlit as st  # Usando tu alias estándar
-import sqlite3
 import pandas as pd
 import time
+from modulos.utils import obtener_conexion_db
 
 def mostrar_modulo_registro():
     # 🎯 Inicializamos las variables de control de bienvenida en el session_state si no existen
@@ -40,7 +40,7 @@ def mostrar_modulo_registro():
             cedula = st.text_input("Cédula de Identidad:", placeholder="Ej: 12345678").strip()
             nombre = st.text_input("Nombre y Apellido completo:").strip()
             
-            # 🎯 NUEVO DATO SOLICITADO: Teléfono obligatorio para que soporte llame o escriba
+            # 🎯 Teléfono obligatorio para que soporte llame o escriba por WhatsApp
             telefono = st.text_input("Número de Teléfono / WhatsApp:", placeholder="Ej: 04121234567").strip()
             
             email = st.text_input("Correo Electrónico:", placeholder="Ej: pedroperez@gmail.com").strip()
@@ -76,7 +76,7 @@ def mostrar_modulo_registro():
         # PROCESAMIENTO LOGÍSTICO AL HACER CLIC
         # =========================================================================
         if boton_registrar:
-            # Validación A: Campos vacíos (incluyendo el nuevo campo de teléfono)
+            # Validación A: Campos vacíos
             if not cedula or not nombre or not telefono or not email or not clave:
                 st.error("⚠️ Todos los campos son obligatorios para proceder con el registro.")
             
@@ -93,34 +93,34 @@ def mostrar_modulo_registro():
                 
             else:
                 try:
-                    # Conectamos a tu base de datos real
-                    conexion = sqlite3.connect('exprex.db')
-                    cursor = conexion.cursor()
-                    
-                    # Verificar si la cédula ya existe para evitar errores de Llave Primaria
-                    cursor.execute("SELECT cedula FROM usuarios WHERE cedula = ?", (cedula,))
-                    existe = cursor.fetchone()
-                    
-                    if existe:
-                        st.error(f"🛑 La cédula {cedula} ya se encuentra registrada en el sistema. Si olvidaste tu acceso, usa la opción de recuperación.")
-                        conexion.close()
-                    else:
-                        # 🎯 Insertar el nuevo usuario incluyendo el campo 'telefono'
-                        # NOTA: Asegúrate de que tu tabla 'usuarios' tenga la columna 'telefono' creada
-                        cursor.execute('''
-                            INSERT INTO usuarios (cedula, nombre, telefono, email, contrasena, rol, activo, departamento)
-                            VALUES (?, ?, ?, ?, ?, 'Conductor', 'Sí', 'Operaciones')
-                        ''', (cedula, nombre, telefono, email, clave))
-                        
-                        conexion.commit()
-                        conexion.close()
-                        
-                        # 🚀 GUARDAMOS EN SESIÓN PARA DISPARAR LA BIENVENIDA
-                        st.session_state.usuario_registrado_nombre = nombre
-                        st.session_state.mostrar_bienvenida = True
-                        
-                        # Forzamos recarga inmediata para ocultar el formulario y pintar el aviso
-                        st.rerun()
-                        
+                    # Conexión limpia y segura a Postgres usando context managers
+                    with obtener_conexion_db() as conexion:
+                        with conexion.cursor() as cursor:
+                            
+                            # Verificar si la cédula ya existe para evitar colisiones de Llave Primaria
+                            # Adaptado a marcador %s de PostgreSQL
+                            cursor.execute("SELECT cedula FROM usuarios WHERE cedula = %s", (cedula,))
+                            existe = cursor.fetchone()
+                            
+                            if existe is not None:
+                                st.error(f"🛑 La cédula {cedula} ya se encuentra registrada en el sistema. Si olvidaste tu acceso, usa la opción de recuperación.")
+                            else:
+                                # Insertar el nuevo usuario en la tabla Postgres
+                                # Se incluyen banco y numero_cuenta para evitar dejar esos campos vacíos
+                                sql_insertar = """
+                                    INSERT INTO usuarios (cedula, nombre, telefono, email, banco, numero_cuenta, contrasena, rol, activo, departamento)
+                                    VALUES (%s, %s, %s, %s, %s, %s, %s, 'Conductor', 'Sí', 'Operaciones')
+                                """
+                                cursor.execute(sql_insertar, (cedula, nombre, telefono, email, banco, num_cuenta, clave))
+                                
+                                conexion.commit()
+                                
+                                # 🚀 GUARDAMOS EN SESIÓN PARA DISPARAR LA BIENVENIDA
+                                st.session_state.usuario_registrado_nombre = nombre
+                                st.session_state.mostrar_bienvenida = True
+                                
+                                # Forzamos recarga inmediata para ocultar el formulario y pintar el aviso
+                                st.rerun()
+                                
                 except Exception as e:
                     st.error(f"❌ Error al registrar en la base de datos: {e}")

@@ -1,11 +1,11 @@
-import streamlit as db_st  # Cambia por st si usas el alias estándar
-import sqlite3
+import streamlit as db_st  # Mantenemos tu alias db_st para este archivo
 import pandas as pd
 import time
 
-def mostrar_modulo_recuperar_contrasena():
+# Importamos tu función centralizada de conexión (ajusta el import si es necesario)
+from conexion_db import obtener_conexion_db  
 
-    personal_base_datos = "exprex.db"
+def mostrar_modulo_recuperar_contrasena():
 
     # Inicializar estados de navegación si no existen
     if "paso_recuperacion" not in db_st.session_state:
@@ -28,23 +28,26 @@ def mostrar_modulo_recuperar_contrasena():
             if not cedula_input:
                 db_st.error("⚠️ El campo de la cédula no puede estar vacío.")
             else:
-                conexion = sqlite3.connect(personal_base_datos)
-                # Buscamos al usuario sin importar el rol (aplica a choferes u operaciones)
-                query = "SELECT cedula, nombre, telefono, email FROM usuarios WHERE cedula = ? AND activo = 'Sí'"
-                df_user = pd.read_sql_query(query, conexion, params=(cedula_input,))
-                conexion.close()
-                
-                if df_user.empty:
-                    db_st.error("🛑 La cédula ingresada no coincide con ningún usuario activo en el sistema.")
-                else:
-                    # Guardamos los datos en el session_state para el siguiente paso
-                    db_st.session_state["cedula_a_recuperar"] = df_user.iloc[0]['cedula']
-                    db_st.session_state["nombre_a_recuperar"] = df_user.iloc[0]['nombre']
-                    db_st.session_state["tel_registrado"] = df_user.iloc[0]['telefono']
-                    db_st.session_state["email_registrado"] = df_user.iloc[0]['email']
+                try:
+                    with obtener_conexion_db() as conexion:
+                        # Buscamos al usuario sin importar el rol (aplica a choferes u operaciones)
+                        # Adaptamos el marcador de posición a %s para PostgreSQL
+                        query = "SELECT cedula, nombre, telefono, email FROM usuarios WHERE cedula = %s AND activo = 'Sí'"
+                        df_user = pd.read_sql_query(query, conexion, params=(cedula_input,))
                     
-                    db_st.session_state["paso_recuperacion"] = 2
-                    db_st.rerun()
+                    if df_user.empty:
+                        db_st.error("🛑 La cédula ingresada no coincide con ningún usuario activo en el sistema.")
+                    else:
+                        # Guardamos los datos en el session_state para el siguiente paso
+                        db_st.session_state["cedula_a_recuperar"] = df_user.iloc[0]['cedula']
+                        db_st.session_state["nombre_a_recuperar"] = df_user.iloc[0]['nombre']
+                        db_st.session_state["tel_registrado"] = df_user.iloc[0]['telefono']
+                        db_st.session_state["email_registrado"] = df_user.iloc[0]['email']
+                        
+                        db_st.session_state["paso_recuperacion"] = 2
+                        db_st.rerun()
+                except Exception as e:
+                    db_st.error(f"❌ Error al consultar la base de datos: {e}")
 
     # =========================================================================
     # PASO 2: COMPROBACIÓN DE IDENTIDAD (DOBLE FACTOR DE DATOS)
@@ -104,15 +107,15 @@ def mostrar_modulo_recuperar_contrasena():
                 db_st.error("❌ Las contraseñas ingresadas no coinciden.")
             else:
                 try:
-                    conexion = sqlite3.connect(personal_base_datos)
-                    cursor = conexion.cursor()
-                    # Actualizamos la contraseña directamente en la fila de su cédula
-                    cursor.execute(
-                        "UPDATE usuarios SET contrasena = ? WHERE cedula = ?", 
-                        (nueva_clave, db_st.session_state["cedula_a_recuperar"])
-                    )
-                    conexion.commit()
-                    conexion.close()
+                    # Conectamos de forma segura con el pool de conexiones de Postgres
+                    with obtener_conexion_db() as conexion:
+                        with conexion.cursor() as cursor:
+                            # Actualizamos la contraseña utilizando el marcador %s
+                            sql_update = "UPDATE usuarios SET contrasena = %s WHERE cedula = %s"
+                            cursor.execute(sql_update, (nueva_clave, db_st.session_state["cedula_a_recuperar"]))
+                            
+                            # Validamos la transacción
+                            conexion.commit()
                     
                     db_st.success("🎉 ¡Tu contraseña ha sido restablecida con éxito! Ya puedes iniciar sesión.")
                     
