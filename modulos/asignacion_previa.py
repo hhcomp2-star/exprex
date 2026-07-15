@@ -220,10 +220,10 @@ def renderizar_pestana_asignar():
                                 WHERE id_viaje = %s
                             """,
                                 (
-                                    chofer_assigned,
-                                    distancia_km,
-                                    monto_flete_calculado,
-                                    id_seleccionado,
+                                    str(chofer_assigned),
+                                    float(distancia_km),
+                                    float(monto_flete_calculado),
+                                    int(id_seleccionado),
                                 ),
                             )
                             conexion.commit()  # Subida directa a Railway
