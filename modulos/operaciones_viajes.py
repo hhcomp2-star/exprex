@@ -246,15 +246,18 @@ def mostrar_modulo_operaciones():
                 if boton_despachar:
                     if distancia_km <= 0:
                         st.error("⚠️ Debe ingresar la distancia en kilómetros calculada para la ruta.")
-                    elif conductor_seleccionado is None:
-                        st.error("❌ No se puede despachar: Debe seleccionar un conductor válido.")
+                    #elif conductor_seleccionado is None:
+                    #    st.error("❌ No se puede despachar: Debe seleccionar un conductor válido.")
                     elif id_viaje_seleccionado is None or str(id_viaje_seleccionado).strip() == "" or str(id_viaje_seleccionado) == "0":
                         st.error("❌ Error: No hay un ID de viaje válido seleccionado para despachar.")
                     else:
                         try:
                             # 1️⃣ CAPTURA Y CASTEO SEGURO (Fuera de la tupla para complacer a Pylance)
                             id_viaje_seguro = int(id_viaje_seleccionado)
-                            conductor_seguro = str(conductor_seleccionado).strip()
+                            if conductor_seleccionado:
+                                conductor_seguro = str(conductor_seleccionado).strip()
+                            else:
+                                conductor_seguro = ""
                             factura_segura = str(num_factura).strip() if num_factura else ""
                             
                             # ESCRITURA EN BASE DE DATOS CENTRALIZADA (POSTGRESQL)
