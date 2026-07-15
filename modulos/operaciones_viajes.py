@@ -47,11 +47,14 @@ def mostrar_modulo_operaciones():
         
         try:
             with obtener_conexion_db() as conexion:
-                # 1. Traer conductores activos usando PostgreSQL
+                # 1. Traer conductores activos usando PostgreSQL y guardarlos firmemente en session_state
                 df_cb_conductores = pd.read_sql_query(
                     "SELECT cedula, nombre FROM usuarios WHERE rol = 'Conductor' AND activo = 'Sí'", 
                     conexion
                 )
+                # Forzamos que la columna 'cedula' sea string en Postgres para evitar conflictos de tipo de datos
+                df_cb_conductores['cedula'] = df_cb_conductores['cedula'].astype(str).str.strip()
+                st.session_state['df_cb_conductores'] = df_cb_conductores
                 
                 # 2. Filtramos para traer SOLO solicitudes con conductor pre-asignado
                 df_solicitudes_pendientes = pd.read_sql_query('''
@@ -103,20 +106,7 @@ def mostrar_modulo_operaciones():
                 """, unsafe_allow_html=True)
                 
                 st.write("")
-                #
-                # =========================================================================
-                # INICIALIZACIÓN DE SEGURIDAD (Para mitigar reportPossiblyUnboundVariable)
-                # =========================================================================
-                # Nos aseguramos de que si las variables de arriba fallaron, tengan un valor por defecto
-                if 'df_cb_conductores' not in locals() or 'df_cb_conductores' not in st.session_state:
-                    df_cb_conductores = pd.DataFrame(columns=['cedula', 'nombre'])
                 
-                if 'viaje_sel' not in locals():
-                    viaje_sel = {'destino': 'No disponible', 'cedula_conductor': '', 'distancia_km': 0.0}
-                
-                if 'id_viaje_seleccionado' not in locals() or id_viaje_seleccionado is None:
-                    id_viaje_seleccionado = 0
-
                 # Enlace interactivo a mapas
                 destino_solicitado = viaje_sel['destino']
                 direccion_url = str(destino_solicitado).replace(" ", "+")
@@ -127,30 +117,35 @@ def mostrar_modulo_operaciones():
                 # FORMULARIO DE DESPACHO INTERACTIVO
                 st.write("#### 🛠️ Completar Información Logística de Salida")
                 
-                
                 # =========================================================================
-                # SANEAMIENTO DE CONDUCTORES 
+                # SANEAMIENTO DE CONDUCTORES (OPTIMIZADO Y PROTEGIDO)
                 # =========================================================================
-                # 1. Inicialización garantizada en el bloque principal (Satisface a Pylance)
                 lista_cedulas_choferes = []
                 mapeo_conductores = {}
 
-                if 'df_cb_conductores' in locals() and locals()['df_cb_conductores'] is not None:
-                    df_conductores_seguro = locals()['df_cb_conductores']
-                elif 'df_cb_conductores' in st.session_state and st.session_state['df_cb_conductores'] is not None:
+                # Buscamos de forma robusta la fuente de datos cargada de Postgres
+                if 'df_cb_conductores' in st.session_state and st.session_state['df_cb_conductores'] is not None:
                     df_conductores_seguro = st.session_state['df_cb_conductores']
+                elif 'df_cb_conductores' in locals() and locals()['df_cb_conductores'] is not None:
+                    df_conductores_seguro = locals()['df_cb_conductores']
                 else:
                     df_conductores_seguro = pd.DataFrame(columns=['cedula', 'nombre'])
 
-                # Ahora procesamos usando la variable que Pylance YA SABE que existe obligatoriamente
+                # Generamos listas y diccionarios de mapeo
                 if not df_conductores_seguro.empty:
-                    lista_cedulas_choferes = df_conductores_seguro['cedula'].tolist()
-                    mapeo_conductores = dict(zip(df_conductores_seguro['cedula'], df_conductores_seguro['nombre']))
+                    lista_cedulas_choferes = df_conductores_seguro['cedula'].astype(str).str.strip().tolist()
+                    mapeo_conductores = dict(zip(
+                        df_conductores_seguro['cedula'].astype(str).str.strip(), 
+                        df_conductores_seguro['nombre']
+                    ))
 
-                # 2. Buscamos el índice preasignado de forma segura
+                # Buscamos el índice preasignado de forma segura asegurando la comparación de texto
+                index_chofer_preasig = 0
                 try:
-                    chofer_preasig = viaje_sel['cedula_conductor'] if 'viaje_sel' in locals() else ''
-                    index_chofer_preasig = lista_cedulas_choferes.index(chofer_preasig) if chofer_preasig in lista_cedulas_choferes else 0
+                    if 'viaje_sel' in locals() and viaje_sel['cedula_conductor'] is not None:
+                        chofer_preasig = str(viaje_sel['cedula_conductor']).strip()
+                        if chofer_preasig in lista_cedulas_choferes:
+                            index_chofer_preasig = lista_cedulas_choferes.index(chofer_preasig)
                 except (ValueError, KeyError):
                     index_chofer_preasig = 0
                 
@@ -163,7 +158,6 @@ def mostrar_modulo_operaciones():
                             "👤 Conductor Asignado para la Ruta",
                             options=lista_cedulas_choferes,
                             index=index_chofer_preasig,
-                            # Al usar el diccionario nativo .get(), Pylance no genera advertencias de desvinculación
                             format_func=lambda x: mapeo_conductores.get(x, "Desconocido")
                         )
                     else:
@@ -182,7 +176,7 @@ def mostrar_modulo_operaciones():
                         lon_input = st.text_input("🌐 Longitud Destino", value="0.0").strip()
                     
                     distancia_calculada = float(viaje_sel['distancia_km']) if viaje_sel['distancia_km'] else 0.0
-                    #
+                    
                     # Validamos coordenadas y aseguramos que el ID del viaje no sea None ni cero
                     if (lat_input != "0.0" and lon_input != "0.0" and 
                         lat_input != "" and lon_input != "" and 
@@ -190,8 +184,6 @@ def mostrar_modulo_operaciones():
                         
                         try:
                             from geopy.distance import geodesic
-                            
-                            # 1️⃣ CASTEO SEGURO (Fuera de la tupla)
                             id_viaje_seguro = int(id_viaje_seleccionado)
                             
                             # BUSQUEDA DIRECTA EN POSTGRESQL
@@ -216,8 +208,7 @@ def mostrar_modulo_operaciones():
                                 dist_lineal = geodesic(punto_origen, punto_destino).kilometers
                                 distancia_calculada = round(dist_lineal * 1.3, 2)
                             
-                        except Exception as e:
-                            # Silenciamos el error para no romper la UX, pero puedes usar st.write(e) si estás depurando la geolocalización
+                        except Exception:
                             pass
                     
                     distancia_km = st.number_input(
@@ -238,7 +229,7 @@ def mostrar_modulo_operaciones():
                 _, sub_col_centro, _ = st.columns([1, 2, 1])
                 with sub_col_centro:
                     boton_despachar = st.button("🚀 Confirmar Despacho y Pasar a 'Por Salir'", use_container_width=True, type="primary")
-                #
+                
                 if boton_despachar:
                     if distancia_km <= 0:
                         st.error("⚠️ Debe ingresar la distancia en kilómetros calculada para la ruta.")
@@ -246,23 +237,18 @@ def mostrar_modulo_operaciones():
                         st.error("❌ Error: No hay un ID de viaje válido seleccionado para despachar.")
                     else:
                         try:
-                            # 1️⃣ CAPTURA Y CASTEO SEGURO
                             id_viaje_seguro = int(id_viaje_seleccionado)
                             factura_segura = str(num_factura).strip() if num_factura else ""
                             
-                            # 2️⃣ RESCATE INTELIGENTE DE CÉDULA (Evita sobreescribir con None o vacío)
                             if conductor_seleccionado:
-                                # Si el usuario seleccionó activamente un conductor en la pantalla, lo usamos
                                 conductor_seguro = str(conductor_seleccionado).strip()
                             else:
-                                # Si el selector falló o está en None, usamos la cédula de la pre-asignación
-                                # que ya tenemos en memoria en la variable 'viaje_sel'
                                 if 'viaje_sel' in locals() and viaje_sel['cedula_conductor']:
                                     conductor_seguro = str(viaje_sel['cedula_conductor']).strip()
                                 else:
-                                    conductor_seguro = None  # En caso extremo de que tampoco tenga pre-asignación
+                                    conductor_seguro = None
                             
-                            # 3️⃣ ESCRITURA EN BASE DE DATOS CENTRALIZADA (POSTGRESQL)
+                            # ESCRITURA EN BASE DE DATOS CENTRALIZADA (POSTGRESQL)
                             with obtener_conexion_db() as conexion:
                                 with conexion.cursor() as cursor:
                                     cursor.execute("""
@@ -277,7 +263,7 @@ def mostrar_modulo_operaciones():
                                             estatus_viaje = 'Por Salir'
                                         WHERE id_viaje = %s
                                     """, (
-                                        conductor_seguro if conductor_seguro else None, # Si es vacío, guarda NULL en DB de forma limpia
+                                        conductor_seguro if conductor_seguro else None,
                                         fecha_despacho, 
                                         float(distancia_km), 
                                         float(monto_calculado),
