@@ -436,6 +436,8 @@ def renderizar_panel_conductor(cedula_conductor):
             **Guía Rápida de Uso:**
             
             * 📱 **Pantalla:** Diseñado para uso vertical en teléfonos móviles.
+            * 🛠️ **Tus viajes pendientes se actualizan al entrar a la aplicación. Para verificar si tienes viajes pendientes, pulsa el botón "🔄 Actualizar y Buscar Nuevos Fletes"
+            * 💡 **Si el vehículo que manejas es de la empresa y te toca echarle combustible, podrás reportarlo a través de la pestaña: Reportar Combustible.
             * 🔍 **Historial:** Si no ves un viaje pasado, verifica tener seleccionado el mes correcto en el filtro.
             * 🔄 **Actualizar:** Si realizas un cambio y no se refleja, usa el botón de retornar al menú o recarga la página.
             * 📇 **Datos:** Los montos de pago y datos de clientes se actualizan en tiempo real desde la base de datos central.
