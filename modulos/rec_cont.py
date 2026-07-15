@@ -3,7 +3,7 @@ import pandas as pd
 import time
 
 # Importamos tu función centralizada de conexión (ajusta el import si es necesario)
-from conexion_db import obtener_conexion_db  
+from modulos.utils import obtener_conexion_db  
 
 def mostrar_modulo_recuperar_contrasena():
 
