@@ -171,7 +171,7 @@ def mostrar_modulo_operaciones():
                         conductor_seleccionado = None
 
                     from datetime import date
-                    fecha_despacho = st.date_input("📅 Fecha de Salida Real", value=datetime.date.today()).strftime("%Y-%m-%d")
+                    fecha_despacho = st.date_input("📅 Fecha de Salida Real", value=date.today()).strftime("%Y-%m-%d")
                     num_factura = st.text_input("🧾 Número de Factura / Control Interno (Opcional)").strip().upper()
 
                 with col2:
