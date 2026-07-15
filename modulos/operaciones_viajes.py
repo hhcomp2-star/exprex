@@ -3,8 +3,10 @@ import pandas as pd
 import time
 import os  
 import sys
+import datetime
 import datetime as dt
 from datetime import datetime
+
 
 # 🔍 CONTROL DE RUTAS CRÍTICO (Evita fallas de importación en subcarpetas de Railway)
 ruta_raiz = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -168,6 +170,7 @@ def mostrar_modulo_operaciones():
                         st.warning("⚠️ No hay conductores activos disponibles.")
                         conductor_seleccionado = None
 
+                    from datetime import date
                     fecha_despacho = st.date_input("📅 Fecha de Salida Real", value=datetime.date.today()).strftime("%Y-%m-%d")
                     num_factura = st.text_input("🧾 Número de Factura / Control Interno (Opcional)").strip().upper()
 
