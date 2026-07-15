@@ -174,9 +174,9 @@ def mostrar_modulo_operaciones():
                     fecha_despacho = st.date_input("📅 Fecha de Salida Real", value=datetime.date.today()).strftime("%Y-%m-%d")
                     num_factura = st.text_input("🧾 Número de Factura / Control Interno (Opcional)").strip().upper()
 
-                    import datetime
-                    fecha_despacho = st.date_input("📅 Fecha de Salida Real", value=datetime.date.today()).strftime("%Y-%m-%d")
-                    num_factura = st.text_input("🧾 Número de Factura / Control Interno (Opcional)").strip().upper()
+                    #import datetime
+                    #fecha_despacho = st.date_input("📅 Fecha de Salida Real", value=datetime.date.today()).strftime("%Y-%m-%d")
+                    #num_factura = st.text_input("🧾 Número de Factura / Control Interno (Opcional)").strip().upper()
 
                 with col2:
                     col_dest_lat, col_dest_lon = st.columns(2)
