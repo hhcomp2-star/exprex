@@ -86,9 +86,11 @@ def mostrar_panel_administrador():
         
         # Validación de la ruta de la imagen
         ruta_logo = "modulos/logo_exprex_5.png"
-        col_izq, col_centro, col_der = st.columns([1, 1, 1])
+        
         if os.path.exists(ruta_logo):
-            st.image(ruta_logo, width=220)
+            col_izq, col_centro, col_der = st.columns([1, 1, 1])
+            with col_centro:
+                st.image(ruta_logo, width=220)
         else:
             st.info("Logo de ExpreX — (Colocar imagen logo_exprex_5.png)")
             
