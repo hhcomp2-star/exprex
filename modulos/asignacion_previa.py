@@ -173,10 +173,17 @@ def renderizar_pestana_asignar():
 
         # Selector de Choferes mapeado de forma segura
         if df_choferes is not None and not df_choferes.empty:
+            # Filtramos el DataFrame para quedarnos SOLO con filas que tengan cédula y nombre válidos (no nulos ni vacíos)
+            df_filtrado = df_choferes[
+                df_choferes["cedula"].notna() & 
+                df_choferes["nombre"].notna() & 
+                (df_choferes["cedula"].astype(str).str.strip() != "")
+            ]
+            
+            # Creamos el diccionario de forma segura con los datos limpios
             dict_choferes = {
                 str(row["cedula"]): f"{row['nombre']} (C.I. {row['cedula']})"
-                for _, row in df_choferes.iterrows()
-                if row["cedula"] and row["nombre"]
+                for _, row in df_filtrado.iterrows()
             }
         else:
             dict_choferes = {}
@@ -209,7 +216,6 @@ def renderizar_pestana_asignar():
                     # 🔌 Conexión limpia usando context manager
                     with obtener_conexion_db() as conexion:
                         with conexion.cursor() as cursor:
-                            # 🎯 Ajustamos marcadores '?' a '%s' para PostgreSQL
                             cursor.execute(
                                 """
                                 UPDATE viajes 
