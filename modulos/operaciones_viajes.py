@@ -35,7 +35,7 @@ def mostrar_modulo_operaciones():
         # 🛠️ Se elimina el argumento 'exprex.db' ya que la pestaña interna 
         # usará directamente el pool centralizado de PostgreSQL.
         renderizar_pestana_asignar()        
-
+    #
     # =========================================================================
     # PESTAÑA 2: PROCESAR Y REGISTRAR DESPACHO (MIGRADO A POSTGRESQL)
     # =========================================================================
@@ -168,7 +168,6 @@ def mostrar_modulo_operaciones():
                         st.warning("⚠️ No hay conductores activos disponibles.")
                         conductor_seleccionado = None
 
-                    import datetime
                     fecha_despacho = st.date_input("📅 Fecha de Salida Real", value=datetime.date.today()).strftime("%Y-%m-%d")
                     num_factura = st.text_input("🧾 Número de Factura / Control Interno (Opcional)").strip().upper()
 
@@ -240,21 +239,27 @@ def mostrar_modulo_operaciones():
                 if boton_despachar:
                     if distancia_km <= 0:
                         st.error("⚠️ Debe ingresar la distancia en kilómetros calculada para la ruta.")
-                    #elif conductor_seleccionado is None:
-                    #    st.error("❌ No se puede despachar: Debe seleccionar un conductor válido.")
                     elif id_viaje_seleccionado is None or str(id_viaje_seleccionado).strip() == "" or str(id_viaje_seleccionado) == "0":
                         st.error("❌ Error: No hay un ID de viaje válido seleccionado para despachar.")
                     else:
                         try:
-                            # 1️⃣ CAPTURA Y CASTEO SEGURO (Fuera de la tupla para complacer a Pylance)
+                            # 1️⃣ CAPTURA Y CASTEO SEGURO
                             id_viaje_seguro = int(id_viaje_seleccionado)
-                            if conductor_seleccionado:
-                                conductor_seguro = str(conductor_seleccionado).strip()
-                            else:
-                                conductor_seguro = ""
                             factura_segura = str(num_factura).strip() if num_factura else ""
                             
-                            # ESCRITURA EN BASE DE DATOS CENTRALIZADA (POSTGRESQL)
+                            # 2️⃣ RESCATE INTELIGENTE DE CÉDULA (Evita sobreescribir con None o vacío)
+                            if conductor_seleccionado:
+                                # Si el usuario seleccionó activamente un conductor en la pantalla, lo usamos
+                                conductor_seguro = str(conductor_seleccionado).strip()
+                            else:
+                                # Si el selector falló o está en None, usamos la cédula de la pre-asignación
+                                # que ya tenemos en memoria en la variable 'viaje_sel'
+                                if 'viaje_sel' in locals() and viaje_sel['cedula_conductor']:
+                                    conductor_seguro = str(viaje_sel['cedula_conductor']).strip()
+                                else:
+                                    conductor_seguro = None  # En caso extremo de que tampoco tenga pre-asignación
+                            
+                            # 3️⃣ ESCRITURA EN BASE DE DATOS CENTRALIZADA (POSTGRESQL)
                             with obtener_conexion_db() as conexion:
                                 with conexion.cursor() as cursor:
                                     cursor.execute("""
@@ -269,7 +274,7 @@ def mostrar_modulo_operaciones():
                                             estatus_viaje = 'Por Salir'
                                         WHERE id_viaje = %s
                                     """, (
-                                        conductor_seguro, 
+                                        conductor_seguro if conductor_seguro else None, # Si es vacío, guarda NULL en DB de forma limpia
                                         fecha_despacho, 
                                         float(distancia_km), 
                                         float(monto_calculado),
