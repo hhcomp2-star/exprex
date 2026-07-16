@@ -14,6 +14,7 @@ if ruta_raiz not in sys.path:
 
 # E importas desde el paquete modulos
 from modulos.utils import obtener_conexion_db, contar_viajes_por_salir, reproducir_alerta_victoria
+from modulos.version_app import mostrar_version_de_la_app
 
 ruta_terminos = os.path.join("modulos", "terminos.txt")
 
@@ -283,10 +284,6 @@ def renderizar_panel_conductor(cedula_conductor):
             # 🔄 BOTÓN DE RETORNO AL MENÚ PRINCIPAL
             st.write("---")
             st.caption("💬 Para volver al inicio pulse o haga tap en la pestaña Fletes Activos")
-            
-            #if st.button("🏠 Volver al Menú Principal", key="btn_home_comb", use_container_width=True):
-            #    st.session_state["chofer_pagina"] = "Menu Principal"
-            #    st.rerun()
 
     # =========================================================================
     # 📌 PESTAÑA 3: HISTORIAL DE FLETES (FILTRADO POR MESES Y CABECERAS LIMPIAS)
@@ -368,7 +365,7 @@ def renderizar_panel_conductor(cedula_conductor):
             monto_acumulado = pd.to_numeric(df_historial['pago_chofer_usd'], errors='coerce').fillna(0.0).sum()
             
             # Usamos columnas adaptadas para que queden alineadas y compactas en el celular
-            col_met1, col_met2 = st.columns(2)
+            col_met1, col_met2 = st.columns(2, gap="small")
             
             with col_met1:
                 st.metric(
@@ -489,7 +486,8 @@ def renderizar_panel_conductor(cedula_conductor):
             st.rerun()
             
         st.markdown("---")
-        st.caption("ExpreX Choferes v1.7.8 • ☁️ Railway Cloud Safe")
+        mostrar_version_de_la_app()
+        #st.caption("ExpreX Choferes v1.7.8 • ☁️ Railway Cloud Safe")
 
 # ==========================================================================================================
 
