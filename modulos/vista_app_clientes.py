@@ -672,5 +672,5 @@ def mostrar_interfaz_cliente():
             st.rerun()
 
         # Pequeño pie de página unificado abajo de los dos módulos
-        mostrar_version_de_la_app()
+    mostrar_version_de_la_app()
        
