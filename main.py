@@ -20,7 +20,7 @@ for ruta in [ruta_raiz, ruta_modulos]:
 # Ahora las importaciones se ejecutarán con total normalidad en tu PC y en la nube
 from modulos.rec_cont import mostrar_modulo_recuperar_contrasena
 from modulos.nvo_reg import mostrar_modulo_registro
-from modulos.componentes import mostrar_encabezado_exprex
+#from modulos.componentes import mostrar_encabezado_exprex
 from modulos.version_app import mostrar_version_de_la_app
 # Configuración de la página
 st.set_page_config(page_title="ExpreX Logística", page_icon="exprex_logo_6.png", layout="centered")
@@ -133,8 +133,8 @@ def verificar_usuario(cedula, contrasena):
 if not st.session_state.autenticado:
     
     if st.session_state["vista_login"] == "recuperar_contrasena":
-        mostrar_encabezado_exprex()
-        #st.markdown("## 🚛 ExpreX Logística")
+        #mostrar_encabezado_exprex()
+        st.markdown("## 🚛 ExpreX Logística")
         mostrar_modulo_recuperar_contrasena() 
         st.markdown("---")
         if st.button("⬅️ Volver al Inicio de Sesión", use_container_width=True):
@@ -142,8 +142,8 @@ if not st.session_state.autenticado:
             st.rerun()
 
     elif st.session_state["vista_login"] == "registro_nuevo":
-        mostrar_encabezado_exprex()
-        #st.markdown("## 🚛 ExpreX Logística")
+        #mostrar_encabezado_exprex()
+        st.markdown("## 🚛 ExpreX Logística")
         mostrar_modulo_registro()
         st.markdown("---")
         if st.button("⬅️ Volver al Inicio de Sesión", use_container_width=True):
@@ -151,8 +151,8 @@ if not st.session_state.autenticado:
             st.rerun()
 
     elif st.session_state["vista_login"] == "soporte_contacto":
-        mostrar_encabezado_exprex()
-        #st.markdown("## 🚛 ExpreX Logística")
+        #mostrar_encabezado_exprex()
+        st.markdown("## 🚛 ExpreX Logística")
         st.write("#### 🎧 Soporte Técnico ExpreX")
 
         
@@ -190,8 +190,8 @@ if not st.session_state.autenticado:
             st.rerun()
 
     else:
-        mostrar_encabezado_exprex()
-        #st.markdown("## 🚛 ExpreX Logística")
+        #mostrar_encabezado_exprex()
+        st.markdown("## 🚛 ExpreX Logística")
         st.write("### Iniciar Sesión")
 
         with st.form("formulario_login"):
@@ -265,8 +265,8 @@ else:
     # ---------------------------------------------------
     # VISTA PRINCIPAL (PANTALLA LIMPIA POST-LOGIN)
     # ---------------------------------------------------
-    mostrar_encabezado_exprex()
-    #st.write(f"## 🚛 ExpreX Logística")
+    #mostrar_encabezado_exprex()
+    st.write(f"## 🚛 ExpreX Logística")
     st.markdown("---")
     st.info(f"**Usuario:** {st.session_state.usuario_nombre} -  **Rol:** {st.session_state.usuario_rol}")
 
