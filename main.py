@@ -22,6 +22,8 @@ from modulos.rec_cont import mostrar_modulo_recuperar_contrasena
 from modulos.nvo_reg import mostrar_modulo_registro
 #from modulos.componentes import mostrar_encabezado_exprex
 from modulos.version_app import mostrar_version_de_la_app
+from streamlit.components.v1 import html
+
 # Configuración de la página
 st.set_page_config(page_title="ExpreX Logística", page_icon="exprex_logo_6.png", layout="centered")
 
@@ -82,18 +84,21 @@ def guardar_sesion_local(cedula, nombre, rol, cliente_id=None):
 
 # Verificamos si no está autenticado en memoria RAM, si hay credenciales guardadas en el navegador
 if not st.session_state.autenticado:
-    # Componente invisible que recupera los datos y los envía a Streamlit en caliente via query params
     query_params = st.query_params
-    if "local_cedula" in query_params and query_params["local_cedula"]:
+    
+    if "local_cedula" in query_params:
+        # Recuperamos y limpiamos inmediatamente
         st.session_state.autenticado = True
         st.session_state.usuario_cedula = query_params["local_cedula"]
         st.session_state.usuario_nombre = query_params["local_nombre"]
         st.session_state.usuario_rol = query_params["local_rol"]
         st.session_state.cliente_id = None if query_params["local_cliente_id"] == "null" else int(query_params["local_cliente_id"])
+        
+        # Limpiamos los query params para dejar la URL limpia
         st.query_params.clear()
-        st.rerun()
+        st.rerun() 
     else:
-        # Inyecta el recuperador automático en el navegador del cliente
+        # Solo inyectamos el script si la URL no está ya procesando un login
         html("""
             <script>
                 const auth = localStorage.getItem("exprex_autenticado");
@@ -104,11 +109,14 @@ if not st.session_state.autenticado:
                     const cliente_id = localStorage.getItem("exprex_cliente_id");
                     
                     const url = new URL(window.location.href);
-                    url.searchParams.set("local_cedula", cedula);
-                    url.searchParams.set("local_nombre", nombre);
-                    url.searchParams.set("local_rol", rol);
-                    url.searchParams.set("local_cliente_id", cliente_id);
-                    window.location.href = url.toString();
+                    // Verificamos que no estemos ya en un bucle de redirección
+                    if (!url.searchParams.has("local_cedula")) {
+                        url.searchParams.set("local_cedula", cedula);
+                        url.searchParams.set("local_nombre", nombre);
+                        url.searchParams.set("local_rol", rol);
+                        url.searchParams.set("local_cliente_id", cliente_id);
+                        window.location.href = url.toString();
+                    }
                 }
             </script>
         """, height=0)
