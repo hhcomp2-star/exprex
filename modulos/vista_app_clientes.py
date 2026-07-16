@@ -642,23 +642,23 @@ def mostrar_interfaz_cliente():
 
         st.markdown("---")
 
-         # =========================================================================
+        # =========================================================================
         # ⚙️ CAMBIO DEL BOTÓN DE SOPORTE POR EL LINK_BUTTON DINÁMICO
         # =========================================================================
-        import urllib.parse
+        #import urllib.parse
 
         # 1. Obtenemos el teléfono del chofer logueado (si está en session_state, si no usamos el tuyo por defecto)
-        telefono_chofer = st.session_state.get('usuario_telefono', '584140335554')
+        #telefono_chofer = st.session_state.get('usuario_telefono', '584140335554')
         
         # 2. Armamos y codificamos el mensaje
-        mensaje_soporte = "Hola, soy chofer de ExpreX y necesito soporte técnico con mi usuario en la aplicación de Exprex Logística."
-        mensaje_codificado = urllib.parse.quote(mensaje_soporte)
+        #mensaje_soporte = "Hola, soy chofer de ExpreX y necesito soporte técnico con mi usuario en la aplicación de Exprex Logística."
+        #mensaje_codificado = urllib.parse.quote(mensaje_soporte)
         
         # 3. Generamos la URL
-        url_whatsapp = f"https://wa.me/{telefono_chofer}?text={mensaje_codificado}"
+        #url_whatsapp = f"https://wa.me/{telefono_chofer}?text={mensaje_codificado}"
 
         # 4. Colocamos el link_button directo en el sidebar
-        st.link_button("❓ Soporte", url=url_whatsapp, use_container_width=True)
+        #st.link_button("❓ Soporte", url=url_whatsapp, use_container_width=True)
 
         # =========================================================================
 
