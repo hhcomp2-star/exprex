@@ -19,6 +19,7 @@ for ruta in [ruta_raiz, ruta_modulos]:
 # Ahora las importaciones se ejecutarán con total normalidad en tu PC y en la nube
 from modulos.rec_cont import mostrar_modulo_recuperar_contrasena
 from modulos.nvo_reg import mostrar_modulo_registro
+from modulos.componentes import mostrar_encabezado_exprex
 #from modulos.utils import obtener_conexion_db  # Usamos tu pool unificado de Postgres
 
 # Configuración de la página
@@ -132,7 +133,8 @@ def verificar_usuario(cedula, contrasena):
 if not st.session_state.autenticado:
     
     if st.session_state["vista_login"] == "recuperar_contrasena":
-        st.markdown("## 🚛 ExpreX Logística")
+        mostrar_encabezado_exprex()
+        #st.markdown("## 🚛 ExpreX Logística")
         mostrar_modulo_recuperar_contrasena() 
         st.markdown("---")
         if st.button("⬅️ Volver al Inicio de Sesión", use_container_width=True):
@@ -140,7 +142,8 @@ if not st.session_state.autenticado:
             st.rerun()
 
     elif st.session_state["vista_login"] == "registro_nuevo":
-        st.markdown("## 🚛 ExpreX Logística")
+        mostrar_encabezado_exprex()
+        #st.markdown("## 🚛 ExpreX Logística")
         mostrar_modulo_registro()
         st.markdown("---")
         if st.button("⬅️ Volver al Inicio de Sesión", use_container_width=True):
@@ -148,7 +151,8 @@ if not st.session_state.autenticado:
             st.rerun()
 
     elif st.session_state["vista_login"] == "soporte_contacto":
-        st.markdown("## 🚛 ExpreX Logística")
+        mostrar_encabezado_exprex()
+        #st.markdown("## 🚛 ExpreX Logística")
         st.write("#### 🎧 Soporte Técnico ExpreX")
         st.write("¿Tienes problemas para ingresar, olvidaste tu usuario o necesitas cambiar tus datos de contacto?")
         st.info("💡 Nuestro equipo de Operaciones te atenderá directamente para validar tu identidad y solucionar tu requerimiento de forma segura.")
@@ -162,19 +166,7 @@ if not st.session_state.autenticado:
             st.rerun()
 
     else:
-        ruta_logo = "modulos/logo_exprex_5.png"
-
-        # Creamos dos columnas: una pequeña para el logo y una grande para el texto
-        col_logo, col_titulo = st.columns([1, 5])
-
-        with col_logo:
-            if os.path.exists(ruta_logo):
-                # Un ancho pequeño (ej: 60px) para que actúe como un icono al lado del texto
-                st.image(ruta_logo, width=60)
-
-        with col_titulo:
-            # Colocamos un pequeño margen superior en HTML para alinear verticalmente el texto con el logo
-            st.markdown("<h2 style='margin-top: 5px;'>ExpreX Logística</h2>", unsafe_allow_html=True)
+        mostrar_encabezado_exprex()
         #st.markdown("## 🚛 ExpreX Logística")
         st.write("### Iniciar Sesión")
 
@@ -249,7 +241,8 @@ else:
     # ---------------------------------------------------
     # VISTA PRINCIPAL (PANTALLA LIMPIA POST-LOGIN)
     # ---------------------------------------------------
-    st.write(f"## 🚛 ExpreX Logística")
+    mostrar_encabezado_exprex()
+    #st.write(f"## 🚛 ExpreX Logística")
     st.markdown("---")
     st.info(f"**Usuario:** {st.session_state.usuario_nombre} -  **Rol:** {st.session_state.usuario_rol}")
 
@@ -302,4 +295,4 @@ else:
         except Exception as e:
             st.error(f"Error al cargar el panel de Cliente: {e}")
 
-st.caption("© ExpreX Logística. 2026 - Versión 1.7.5 • 🔑 Persistencia Activada")
+st.caption("© ExpreX Logística. 2026 - Versión 1.7.7 • 🔑 Persistencia Activada")
