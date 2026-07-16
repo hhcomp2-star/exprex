@@ -454,9 +454,11 @@ def mostrar_interfaz_cliente():
 
         # 🔄 BOTÓN DE RETORNO AL MENÚ PRINCIPAL
         st.write("---")
-        if st.button("🏠 Volver al Menú Principal", key="btn_home_hist_cli", use_container_width=True):
-            st.session_state["cliente_pagina"] = "Menu Principal"
-            st.rerun()
+
+        st.info("Para ir a la pantalla inicial haga clic en la pestaña Solicitar Nuevo Flete")
+        #if st.button("🏠 Volver al Menú Principal", key="btn_home_hist_cli", use_container_width=True):
+        #    st.session_state["cliente_pagina"] = "Menu Principal"
+        st.rerun()
     #
     # =========================================================================
     # PESTAÑA: CONSULTOR INDIVIDUAL DE DESPACHOS (PARA CLIENTES)
@@ -637,6 +639,8 @@ def mostrar_interfaz_cliente():
         with st.expander("📄 Términos y Condiciones", expanded=False):
             # Mostramos el contenido exacto del archivo txt en pantalla
             st.markdown(texto_legal_choferes)
+
+        st.markdown("---")
 
          # =========================================================================
         # ⚙️ CAMBIO DEL BOTÓN DE SOPORTE POR EL LINK_BUTTON DINÁMICO
