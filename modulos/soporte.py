@@ -1,4 +1,4 @@
-import stremlit as st
+import streamlit as st
 import urllib.parse 
 
 def llamar_soporte():

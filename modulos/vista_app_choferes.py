@@ -15,6 +15,7 @@ if ruta_raiz not in sys.path:
 # E importas desde el paquete modulos
 from modulos.utils import obtener_conexion_db, contar_viajes_por_salir, reproducir_alerta_victoria
 from modulos.version_app import mostrar_version_de_la_app
+from modulos.soporte import llamar_soporte
 
 ruta_terminos = os.path.join("modulos", "terminos.txt")
 
@@ -381,7 +382,8 @@ def renderizar_panel_conductor(cedula_conductor):
                 )
             
             st.write("---")  # Línea sutil divisoria
-            # =========================================================================
+
+            # ======================================================================================================
 
             # 🔄 MAPEO DE CABECERAS: Renombramos los campos técnicos a nombres amigables
             df_visual = df_historial.rename(columns={
@@ -451,44 +453,64 @@ def renderizar_panel_conductor(cedula_conductor):
     # 📌 SECCIÓN DE AYUDA Y SOPORTE EN LA BARRA LATERAL
     # =========================================================================
     with st.sidebar:
-        st.write("---")
-        st.caption("⚙️ SOPORTE EXPREX")
+    st.write("---")
+    st.caption("⚙️ SOPORTE EXPREX")
+    
+    # Un expander dentro del sidebar para que no ocupe espacio visual directo
+    with st.expander("❓ Manual de Ayuda", expanded=False):
+        st.markdown("""
+        **Guía Rápida de Uso:**
         
-        # Un expander dentro del sidebar para que no ocupe espacio visual directo
-        with st.expander("❓ Manual de Ayuda", expanded=False):
-            st.markdown("""
-            **Guía Rápida de Uso:**
-            
-            * 📱 **Pantalla:** Diseñado para uso vertical en teléfonos móviles.
-            * 🛠️ **Tus viajes pendientes se actualizan al entrar a la aplicación. Para verificar si tienes viajes pendientes, pulsa el botón "🔄 Actualizar y Buscar Nuevos Fletes"
-            * 💡 **Si el vehículo que manejas es de la empresa y te toca echarle combustible, podrás reportarlo a través de la pestaña: Reportar Combustible.
-            * 🔍 **Historial:** Si no ves un viaje pasado, verifica tener seleccionado el mes correcto en el filtro.
-            * 🔄 **Actualizar:** Si realizas un cambio y no se refleja, usa el botón de retornar al menú o recarga la página.
-            * 📇 **Datos:** Los montos de pago y datos de clientes se actualizan en tiempo real desde la base de datos central.
-            
-            ---
-            💬 **¿Problemas con la App?**  
-            Comunícate de inmediato con el administrador del sistema para reportar fallas o solicitar soporte técnico.
-            """)
-            
-        # --- TÉRMINOS Y CONDICIONES DESDE TERMINOS.TXT ---
-        with st.expander("📄 Términos y Condiciones", expanded=False):
-            st.markdown(texto_legal_choferes)
-            
-        st.markdown("---")    
-        # Usamos st.button directo especificando el contenedor del sidebar de forma limpia
-        if st.button("🚪 Cerrar Sesión", use_container_width=True, key="btn_logout_sidebar"):
-            st.session_state.autenticado = False
-            st.session_state.usuario_cedula = ""
-            st.session_state.usuario_nombre = ""
-            st.session_state.usuario_rol = ""
-            st.session_state.cliente_id = None
-            st.session_state.vista_login = "login"
-            st.rerun()
+        * 📱 **Pantalla:** Diseñado para uso vertical en teléfonos móviles.
+        * 🛠️ **Tus viajes pendientes se actualizan al entrar a la aplicación. Para verificar si tienes viajes pendientes, pulsa el botón "🔄 Actualizar y Buscar Nuevos Fletes"
+        * 💡 **Si el vehículo que manejas es de la empresa y te toca echarle combustible, podrás reportarlo a través de la pestaña: Reportar Combustible.
+        * 🔍 **Historial:** Si no ves un viaje pasado, verifica tener seleccionado el mes correcto en el filtro.
+        * 🔄 **Actualizar:** Si realizas un cambio y no se refleja, usa el botón de retornar al menú o recarga la página.
+        * 📇 **Datos:** Los montos de pago y datos de clientes se actualizan en tiempo real desde la base de datos central.
+        
+        ---
+        💬 **¿Problemas con la App?**  
+        Comunícate de inmediato con el administrador del sistema para reportar fallas o solicitar soporte técnico.
+        """)
+        
+    # --- TÉRMINOS Y CONDICIONES DESDE TERMINOS.TXT ---
+    with st.expander("📄 Términos y Condiciones", expanded=False):
+        st.markdown(texto_legal_choferes)
+        
+    st.markdown("---")    
+
+    # =========================================================================
+    # ⚙️ CAMBIO DEL BOTÓN DE SOPORTE POR EL LINK_BUTTON DINÁMICO
+    # =========================================================================
+    import urllib.parse
+
+    # 1. Obtenemos el teléfono del chofer logueado (si está en session_state, si no usamos el tuyo por defecto)
+    telefono_chofer = st.session_state.get('usuario_telefono', '584140335554')
+    
+    # 2. Armamos y codificamos el mensaje
+    mensaje_soporte = "Hola, soy chofer de ExpreX y necesito soporte técnico con mi usuario en la aplicación de Exprex Logística."
+    mensaje_codificado = urllib.parse.quote(mensaje_soporte)
+    
+    # 3. Generamos la URL
+    url_whatsapp = f"https://wa.me/{telefono_chofer}?text={mensaje_codificado}"
+
+    # 4. Colocamos el link_button directo en el sidebar
+    st.link_button("❓ Soporte", url=url_whatsapp, use_container_width=True)
+    # =========================================================================
+
+    # Usamos st.button directo especificando el contenedor del sidebar de forma limpia
+    if st.button("🚪 Cerrar Sesión", use_container_width=True, key="btn_logout_sidebar"):
+        st.session_state.autenticado = False
+        st.session_state.usuario_cedula = ""
+        st.session_state.usuario_nombre = ""
+        st.session_state.usuario_rol = ""
+        st.session_state.cliente_id = None
+        st.session_state.vista_login = "login"
+        st.rerun()
             
         st.markdown("---")
         mostrar_version_de_la_app()
-        #st.caption("ExpreX Choferes v1.7.8 • ☁️ Railway Cloud Safe")
+        
 
 # ==========================================================================================================
 
