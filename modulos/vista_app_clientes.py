@@ -5,7 +5,7 @@ import sys
 import datetime as dt
 import pandas as pd
 import streamlit.components.v1 as components
-from modulos.version_app import mostrar_version_de_la_app
+#from modulos.version_app import mostrar_version_de_la_app
 
 
 ruta_raiz = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -672,5 +672,5 @@ def mostrar_interfaz_cliente():
             st.rerun()
 
         # Pequeño pie de página unificado abajo de los dos módulos
-    mostrar_version_de_la_app()
+    #mostrar_version_de_la_app()
        
