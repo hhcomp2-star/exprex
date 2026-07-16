@@ -5,6 +5,7 @@ import sys
 import datetime as dt
 import pandas as pd
 import streamlit.components.v1 as components
+from modulos.version_app import mostrar_version_de_la_app
 
 
 ruta_raiz = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -389,44 +390,6 @@ def mostrar_interfaz_cliente():
             st.error(f"❌ Error al cargar historial filtrado: {e}")
             df_historial = pd.DataFrame()
 
-            
-        # Formateamos el selector para que el cliente vea "Julio 2026", "Junio 2026", etc.
-        #mes_seleccionado = st.selectbox(
-        #    "📅 Seleccione el mes a consultar:",
-        #    options=opciones_meses,
-        #    format_func=lambda x: f"{meses_dicc[x[1]]} {x[0]}" if x is not None else ""
-        #)
-        
-        # 💡 CONTROL CRÍTICO: Si no hay opciones, evitamos que rompa la app
-        #if mes_seleccionado is None:
-        #    mes_seleccionado = (hoy.year, hoy.month)
-        
-        #ano_sel, mes_sel = mes_seleccionado
-            
-        #try:
-            # Optamos por EXTRACT(YEAR...) y EXTRACT(MONTH...) optimizado para PostgreSQL
-        #    query_historial = """
-        #        SELECT id_viaje, fecha_despacho, origen, cliente_solicitante, destino, estatus_viaje, tipo_material, num_pedido, 
-        #               monto_flete_usd, descuento_usd, importe_neto_usd
-        #        FROM viajes 
-        #        WHERE id_cliente = %s 
-        #          AND EXTRACT(YEAR FROM fecha_despacho) = %s
-        #          AND EXTRACT(MONTH FROM fecha_despacho) = %s
-        #        ORDER BY id_viaje DESC
-        #    """
-            
-        #    cliente_id_seguro = st.session_state.get("cliente_id", 0)
-        #    
-        #    with obtener_conexion_db() as conexion:
-        #        df_historial = pd.read_sql_query(
-        #            query_historial, 
-        #            conexion, 
-        #            params=(cliente_id_seguro, ano_sel, mes_sel)
-        #        )
-        #except Exception as e:
-        #    st.error(f"❌ Error al cargar historial filtrado: {e}")
-        #    df_historial = pd.DataFrame()
-
         if df_historial.empty:
             st.info(f"ℹ️ No se registran despachos finalizados en {meses_dicc[mes_sel]} {ano_sel}.")
         else:
@@ -637,13 +600,14 @@ def mostrar_interfaz_cliente():
             """)
             
             # Pie de página sutil con la versión que congelamos con Engrampa
-            st.caption("ExpreX v1.7.5 • 2026 🚛")
+            mostrar_version_de_la_app()
+            #st.caption("ExpreX v1.7.5 • 2026 🚛")
 
         # --- OPCIÓN 2: MARCO LEGAL Y OPERATIVO ---
         with st.expander("📄 Marco Legal y Políticas", expanded=False):
             st.markdown("""
             ### Contrato de Uso y Condiciones de Servicio
-            *ExpreX Logística — v1.7.5 (2026)*
+            *ExpreX Logística — v1.7.8 (2026)*
             
             Al utilizar esta plataforma, usted acepta las siguientes políticas operativas:
             
@@ -684,4 +648,5 @@ def mostrar_interfaz_cliente():
             st.rerun()
 
         # Pequeño pie de página unificado abajo de los dos módulos
-        st.caption("ExpreX Logística v1.7.5 • 🔒 Conexión Segura")
+        mostrar_version_de_la_app()
+        #st.caption("ExpreX Logística v1.7.8 • 🔒 Conexión Segura")

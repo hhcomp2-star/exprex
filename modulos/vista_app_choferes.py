@@ -359,6 +359,32 @@ def renderizar_panel_conductor(cedula_conductor):
         if df_historial.empty:
             st.info(f"ℹ️ No registras viajes finalizados en {meses_dicc[mes_sel]} {ano_sel}.")
         else:
+            # =========================================================================
+            # 📊 NUEVA SECCIÓN: MÉTRICAS DEL MES (ENTRE EL SELECTOR Y EL LISTADO)
+            # =========================================================================
+            total_viajes = len(df_historial)
+            
+            # Sumamos los pagos asegurándonos de tratar los nulos como 0.0
+            monto_acumulado = pd.to_numeric(df_historial['pago_chofer_usd'], errors='coerce').fillna(0.0).sum()
+            
+            # Usamos columnas adaptadas para que queden alineadas y compactas en el celular
+            col_met1, col_met2 = st.columns(2)
+            
+            with col_met1:
+                st.metric(
+                    label="Viajes Realizados", 
+                    value=f"{total_viajes}"
+                )
+                
+            with col_met2:
+                st.metric(
+                    label="Monto Acumulado", 
+                    value=f"${monto_acumulado:,.2f}"
+                )
+            
+            st.write("---")  # Línea sutil divisoria
+            # =========================================================================
+
             # 🔄 MAPEO DE CABECERAS: Renombramos los campos técnicos a nombres amigables
             df_visual = df_historial.rename(columns={
                 'id_viaje': 'Flete N°',
@@ -463,7 +489,7 @@ def renderizar_panel_conductor(cedula_conductor):
             st.rerun()
             
         st.markdown("---")
-        st.caption("ExpreX Choferes v1.7.1 • ☁️ Railway Cloud Safe")
+        st.caption("ExpreX Choferes v1.7.8 • ☁️ Railway Cloud Safe")
 
 # ==========================================================================================================
 

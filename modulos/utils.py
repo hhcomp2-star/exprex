@@ -113,3 +113,5 @@ def contar_viajes_en_ruta(cedula_conductor: str) -> int:
                 return cantidad
     except Exception:
         return 0
+    
+   

@@ -20,8 +20,7 @@ for ruta in [ruta_raiz, ruta_modulos]:
 from modulos.rec_cont import mostrar_modulo_recuperar_contrasena
 from modulos.nvo_reg import mostrar_modulo_registro
 from modulos.componentes import mostrar_encabezado_exprex
-#from modulos.utils import obtener_conexion_db  # Usamos tu pool unificado de Postgres
-
+from modulos.version_app import mostrar_version_de_la_app
 # Configuración de la página
 st.set_page_config(page_title="ExpreX Logística", page_icon="exprex_logo_6.png", layout="centered")
 
@@ -294,5 +293,5 @@ else:
             mostrar_interfaz_cliente()
         except Exception as e:
             st.error(f"Error al cargar el panel de Cliente: {e}")
-
-st.caption("© ExpreX Logística. 2026 - Versión 1.7.7 • 🔑 Persistencia Activada")
+mostrar_version_de_la_app()
+#st.caption("© ExpreX Logística. 2026 - Versión 1.7.8 • 🔑 Persistencia Activada")
