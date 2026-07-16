@@ -199,8 +199,8 @@ if not st.session_state.autenticado:
 
     else:
         #mostrar_encabezado_exprex()
-        st.markdown("## 🚛 ExpreX Logística")
-        st.write("### Iniciar Sesión")
+        st.markdown("### 🚛 ExpreX Logística")
+        st.write("#### Iniciar Sesión")
 
         with st.form("formulario_login"):
             campo_cedula = st.text_input("Cédula de Identidad o RIF Empresa:").strip()
