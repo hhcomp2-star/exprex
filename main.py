@@ -3,6 +3,7 @@ import os
 import time
 import sys
 import psycopg2
+import urllib.parse
 
 # =========================================================================
 # 🔍 CONTROL DE RUTAS CRÍTICO (Soluciona el error 'No module named utils')
@@ -153,12 +154,36 @@ if not st.session_state.autenticado:
         mostrar_encabezado_exprex()
         #st.markdown("## 🚛 ExpreX Logística")
         st.write("#### 🎧 Soporte Técnico ExpreX")
-        st.write("¿Tienes problemas para ingresar, olvidaste tu usuario o necesitas cambiar tus datos de contacto?")
-        st.info("💡 Nuestro equipo de Operaciones te atenderá directamente para validar tu identidad y solucionar tu requerimiento de forma segura.")
+
         
-        mensaje_soporte = "Hola, soy chofer de ExpreX y necesito soporte técnico con mi usuario en la aplicación de Exprex Logística."
-        url_whatsapp = f"https://wa.me/584140335554?text={mensaje_soporte.replace(' ', '%20')}"
-        st.markdown(f"[🚀 ¡Hacer clic aquí para contactar a Soporte Operaciones por WhatsApp!]({url_whatsapp})")
+
+        st.write("¿Tienes problemas para iniciar sesión? Solicita soporte técnico:")
+
+        # 1. Le pedimos al chofer que escriba su número de teléfono en la pantalla
+        telefono_usuario = st.text_input("📞 Ingresa tu número de teléfono (ej: 04141234567):", key="tel_soporte")
+
+        if telefono_usuario:
+            # 2. Tu número de soporte de ExpreX (el que recibe el mensaje)
+            numero_soporte_empresa = "584140335554"
+            
+            # 3. Armamos el mensaje incluyendo de forma dinámica el teléfono que el usuario acaba de escribir
+            mensaje_soporte = f"Hola, soy chofer de ExpreX. Necesito soporte técnico con mi usuario. Mi número de teléfono registrado es: {telefono_usuario}."
+            
+            # 4. Codificamos el mensaje para la URL de forma segura
+            mensaje_codificado = urllib.parse.quote(mensaje_soporte)
+            url_whatsapp = f"https://wa.me/{numero_soporte_empresa}?text={mensaje_codificado}"
+            
+            # 5. Mostramos el botón de contacto
+            st.markdown(f"[🚀 ¡Hacer clic aquí para enviar reporte a Soporte por WhatsApp!]({url_whatsapp})")
+        else:
+            st.info("💡 Por favor, ingresa tu número de teléfono arriba para habilitar el enlace de soporte por WhatsApp.")
+
+        #st.write("¿Tienes problemas para ingresar, olvidaste tu usuario o necesitas cambiar tus datos de contacto?")
+        #st.info("💡 Nuestro equipo de Operaciones te atenderá directamente para validar tu identidad y solucionar tu requerimiento de forma segura.")
+        
+        #mensaje_soporte = "Hola, soy chofer de ExpreX y necesito soporte técnico con mi usuario en la aplicación de Exprex Logística."
+        #url_whatsapp = f"https://wa.me/584140335554?text={mensaje_soporte.replace(' ', '%20')}"
+        #st.markdown(f"[🚀 ¡Hacer clic aquí para contactar a Soporte Operaciones por WhatsApp!]({url_whatsapp})")
         st.markdown("---")
         if st.button("⬅️ Volver al Inicio de Sesión", use_container_width=True):
             st.session_state["vista_login"] = "login"
