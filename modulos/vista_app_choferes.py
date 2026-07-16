@@ -517,20 +517,38 @@ def renderizar_panel_conductor(cedula_conductor):
 def actualizar_estatus_viaje(id_viaje, nuevo_estatus, archivo_foto_streamlit=None):
     """
     Función Única Centralizada para controlar el ciclo de vida de un flete en PostgreSQL.
-    Se eliminó 'db_path' ya que la conexión se maneja mediante el pool global de Railway.
+    Guarda la foto físicamente en el disco del servidor y registra la ruta de texto en la base de datos.
     """
     try:
         import psycopg2
+        import os  # 👈 Necesario para manejar las carpetas y rutas físicas
+        
         # 🛠️ MIGRADO A POSTGRESQL (RAILWAY)
         with obtener_conexion_db() as conexion:
             with conexion.cursor() as cursor:
                 
                 if nuevo_estatus == 'Entregado':
-                    # 📁 1️⃣ LECTURA BINARIA DE LA FOTO (Evitamos guardado local volátil)
-                    bytes_foto = None
+                    # 📁 1️⃣ GUARDADO FÍSICO DE LA FOTO Y OBTENCIÓN DE RUTA DE TEXTO
+                    ruta_base_datos = None  # Esto es lo que guardaremos en Postgres
+                    
                     if archivo_foto_streamlit is not None:
-                        # Convertimos el buffer de Streamlit directamente a bytes para guardarlo en el campo BYTEA
+                        # Definimos y aseguramos la existencia de la carpeta local
+                        directorio_fotos = "exprex/fotos_entregas"
+                        os.makedirs(directorio_fotos, exist_ok=True)
+                        
+                        # Generamos el nombre del archivo basado en el id_viaje
+                        nombre_archivo = f"viaje_{id_viaje}_evidencia.jpg"
+                        ruta_fisica_local = os.path.join(directorio_fotos, nombre_archivo)
+                        
+                        # Extraemos los bytes del buffer de Streamlit
                         bytes_foto = archivo_foto_streamlit.getvalue()
+                        
+                        # Guardamos el archivo físicamente en el servidor
+                        with open(ruta_fisica_local, "wb") as archivo_disco:
+                            archivo_disco.write(bytes_foto)
+                        
+                        # Definimos la ruta relativa que guardará la base de datos (Ej: 'fotos_entregas/viaje_126_evidencia.jpg')
+                        ruta_base_datos = f"fotos_entregas/{nombre_archivo}"
 
                     # 2️⃣ LEER DATOS REALES DEL VIAJE
                     cursor.execute("""
@@ -588,7 +606,7 @@ def actualizar_estatus_viaje(id_viaje, nuevo_estatus, archivo_foto_streamlit=Non
                         pago_chofer = round(importe_neto * porcentaje_chofer, 2)
                         beneficio_exprex = round(importe_neto - pago_chofer, 2)
                         
-                        # 💾 Inyección total en la tabla 'viajes' (Guarda la foto como binario en Postgres)
+                        # 💾 Inyección total en la tabla 'viajes' (Guarda la ruta de texto en Postgres)
                         sql_update = """
                             UPDATE viajes 
                             SET estatus_viaje = 'Entregado', 
@@ -601,7 +619,7 @@ def actualizar_estatus_viaje(id_viaje, nuevo_estatus, archivo_foto_streamlit=Non
                             WHERE id_viaje = %s
                         """
                         cursor.execute(sql_update, (
-                            psycopg2.Binary(bytes_foto) if bytes_foto is not None else None, 
+                            ruta_base_datos,  # 👈 Guardamos la ruta de texto de la imagen
                             monto_flete_total, descuento, importe_neto, 
                             pago_chofer, beneficio_exprex, id_viaje
                         ))
