@@ -160,7 +160,7 @@ if not st.session_state.autenticado:
         # 1. El chofer ingresa su número de teléfono
         telefono_usuario = st.text_input(
             "📞 Ingresa tu número de teléfono registrado:", 
-            placeholder="Ej: 04141234567",
+            placeholder="Ej: +584141234567",
             key="tel_soporte"
         )
 
@@ -183,7 +183,7 @@ if not st.session_state.autenticado:
             )
         else:
             # Mensaje amigable mientras el campo está vacío
-            st.info("💡 Por favor, escribe tu número de teléfono arriba para habilitar el botón de envío.")
+            st.info("💡 Por favor, escribe tu número de teléfono arriba y luego taca aquí para habilitar el botón de envío.")
         
 
         #st.write("¿Tienes problemas para ingresar, olvidaste tu usuario o necesitas cambiar tus datos de contacto?")
