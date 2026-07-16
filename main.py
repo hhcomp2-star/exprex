@@ -185,13 +185,6 @@ if not st.session_state.autenticado:
             # Mensaje amigable mientras el campo está vacío
             st.info("💡 Por favor, escribe tu número de teléfono arriba y luego taca aquí para habilitar el botón de envío.")
         
-
-        #st.write("¿Tienes problemas para ingresar, olvidaste tu usuario o necesitas cambiar tus datos de contacto?")
-        #st.info("💡 Nuestro equipo de Operaciones te atenderá directamente para validar tu identidad y solucionar tu requerimiento de forma segura.")
-        
-        #mensaje_soporte = "Hola, soy chofer de ExpreX y necesito soporte técnico con mi usuario en la aplicación de Exprex Logística."
-        #url_whatsapp = f"https://wa.me/584140335554?text={mensaje_soporte.replace(' ', '%20')}"
-        #st.markdown(f"[🚀 ¡Hacer clic aquí para contactar a Soporte Operaciones por WhatsApp!]({url_whatsapp})")
         st.markdown("---")
         if st.button("⬅️ Volver al Inicio de Sesión", use_container_width=True):
             st.session_state["vista_login"] = "login"
@@ -274,7 +267,7 @@ else:
     # VISTA PRINCIPAL (PANTALLA LIMPIA POST-LOGIN)
     # ---------------------------------------------------
     #mostrar_encabezado_exprex()
-    st.write(f"## 🚛 ExpreX Logística")
+    st.write(f"#### 🚛 ExpreX Logística")
     st.markdown("---")
     st.info(f"**Usuario:** {st.session_state.usuario_nombre} -  **Rol:** {st.session_state.usuario_rol}")
 
