@@ -267,7 +267,7 @@ else:
     # VISTA PRINCIPAL (PANTALLA LIMPIA POST-LOGIN)
     # ---------------------------------------------------
     #mostrar_encabezado_exprex()
-    st.write(f"#### 🚛 ExpreX Logística")
+    st.write(f"### 🚛 ExpreX Logística")
     st.markdown("---")
     st.info(f"**Usuario:** {st.session_state.usuario_nombre} -  **Rol:** {st.session_state.usuario_rol}")
 
