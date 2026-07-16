@@ -155,28 +155,36 @@ if not st.session_state.autenticado:
         st.markdown("## 🚛 ExpreX Logística")
         st.write("#### 🎧 Soporte Técnico ExpreX")
 
-        
-
         st.write("¿Tienes problemas para iniciar sesión? Solicita soporte técnico:")
 
-        # 1. Le pedimos al chofer que escriba su número de teléfono en la pantalla
-        telefono_usuario = st.text_input("📞 Ingresa tu número de teléfono (ej: 04141234567):", key="tel_soporte")
+        # 1. El chofer ingresa su número de teléfono
+        telefono_usuario = st.text_input(
+            "📞 Ingresa tu número de teléfono registrado:", 
+            placeholder="Ej: 04141234567",
+            key="tel_soporte"
+        )
 
-        if telefono_usuario:
-            # 2. Tu número de soporte de ExpreX (el que recibe el mensaje)
+        # 2. Si el usuario escribió su número, le mostramos el botón de enviar
+        if telefono_usuario.strip():
+            # Tu número de soporte de ExpreX que recibirá el caso
             numero_soporte_empresa = "584140335554"
             
-            # 3. Armamos el mensaje incluyendo de forma dinámica el teléfono que el usuario acaba de escribir
+            # Armamos y codificamos el mensaje para que no falle con las tildes
             mensaje_soporte = f"Hola, soy chofer de ExpreX. Necesito soporte técnico con mi usuario. Mi número de teléfono registrado es: {telefono_usuario}."
-            
-            # 4. Codificamos el mensaje para la URL de forma segura
             mensaje_codificado = urllib.parse.quote(mensaje_soporte)
             url_whatsapp = f"https://wa.me/{numero_soporte_empresa}?text={mensaje_codificado}"
             
-            # 5. Mostramos el botón de contacto
-            st.markdown(f"[🚀 ¡Hacer clic aquí para enviar reporte a Soporte por WhatsApp!]({url_whatsapp})")
+            # Mostramos un botón real y llamativo de "Enviar" que abre la URL
+            st.link_button(
+                label="🚀 Enviar reporte por WhatsApp", 
+                url=url_whatsapp, 
+                type="primary",          # Esto lo pinta de azul/color principal de tu tema
+                use_container_width=True # Hace que ocupe todo el ancho en la pantalla del celular
+            )
         else:
-            st.info("💡 Por favor, ingresa tu número de teléfono arriba para habilitar el enlace de soporte por WhatsApp.")
+            # Mensaje amigable mientras el campo está vacío
+            st.info("💡 Por favor, escribe tu número de teléfono arriba para habilitar el botón de envío.")
+        
 
         #st.write("¿Tienes problemas para ingresar, olvidaste tu usuario o necesitas cambiar tus datos de contacto?")
         #st.info("💡 Nuestro equipo de Operaciones te atenderá directamente para validar tu identidad y solucionar tu requerimiento de forma segura.")
