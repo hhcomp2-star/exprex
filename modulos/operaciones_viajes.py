@@ -20,113 +20,7 @@ from modulos.asignacion_previa import renderizar_pestana_asignar
 import streamlit as st
 import pandas as pd
 from modulos.utils import obtener_conexion_db  # O como tengas tu importación aquí
-# =============================================================================================================
-# Gestión de tarifas
-# =============================================================================================================
-
-def seccion_tarifas_admin():
-    st.header("⚙️ Gestión de Tarifas Tentativas")
-    st.write("Administra las zonas, distancias y precios de fletes para tus clientes.")
-
-    tab1, tab2 = st.tabs(["🔎 Ver y Buscar Tarifas", "➕ Agregar / Modificar Zona"])
-
-    # --- TAB 1: BUSCADOR ---
-    with tab1:
-        busqueda = st.text_input("Buscar zona existente:", placeholder="Ej. Valencia...").strip()
-        
-        query_base = """
-            SELECT zona AS "Zona", 
-                   kilometros_estimados AS "Km Aprox.", 
-                   monto_normal AS "Normal ($)",
-                   monto_express AS "Express ($)",
-                   observaciones AS "Observaciones",
-                   fecha_actualizacion AS "Última Actualización"
-            FROM tarifas_tentativas
-        """
-        
-        conn = None
-        df = pd.DataFrame()
-        try:
-            conn = obtener_conexion_db()
-            if busqueda:
-                query = query_base + " WHERE zona ILIKE %s ORDER BY zona ASC"
-                df = pd.read_sql(query, conn, params=(f"%{busqueda}%",))
-            else:
-                query = query_base + " ORDER BY zona ASC"
-                df = pd.read_sql(query, conn)
-        except Exception as e:
-            st.error(f"❌ Error al consultar las tarifas: {e}")
-        finally:
-            if conn is not None:
-                conn.close()
-
-        if not df.empty:
-            st.dataframe(
-                df.style.format({
-                    "Km Aprox.": "{:.1f} Km",
-                    "Normal ($)": "${:.2f}",
-                    "Express ($)": "${:.2f}"
-                }),
-                use_container_width=True, 
-                hide_index=True
-            )
-        else:
-            st.warning("No hay tarifas registradas que coincidan.")
-
-    # --- TAB 2: AGREGAR/MODIFICAR ---
-    with tab2:
-        st.subheader("Registrar o Actualizar Distancia y Tarifas")
-        with st.form("nueva_tarifa_form", clear_on_submit=True):
-            nueva_zona = st.text_input("Nombre de la Zona/Destino:", placeholder="Ej. Barquisimeto").strip()
-            
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                nuevos_km = st.number_input("Distancia (Km):", min_value=0.1, step=1.0, format="%.1f")
-            
-            # Aplicamos la regla del kilometraje mínimo (mínimo de 8 km para el cálculo)
-            km_para_calculo = max(8.0, nuevos_km)
-            
-            with col2:
-                # Sugerimos por defecto el cálculo con el mínimo de 8 km aplicado
-                val_normal = km_para_calculo * 2.5
-                monto_n = st.number_input("Precio Normal ($):", min_value=0.0, value=val_normal, step=1.0, format="%.2f")
-            with col3:
-                # Sugerimos por defecto el cálculo con el mínimo de 8 km aplicado
-                val_express = km_para_calculo * 4.0
-                monto_e = st.number_input("Precio Express ($):", min_value=0.0, value=val_express, step=1.0, format="%.2f")
-            
-            nuevas_observaciones = st.text_area("Notas adicionales:", placeholder="Tarifa base. Válida para camiones de capacidad estándar.")
-            boton_guardar = st.form_submit_button("Guardar Cambios")
-            
-            if boton_guardar:
-                if not nueva_zona:
-                    st.error("❌ El nombre de la zona no puede estar vacío.")
-                else:
-                    query_upsert = """
-                        INSERT INTO tarifas_tentativas (zona, kilometros_estimados, monto_normal, monto_express, observaciones, fecha_actualizacion)
-                        VALUES (%s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
-                        ON CONFLICT (zona) 
-                        DO UPDATE SET 
-                            kilometros_estimados = EXCLUDED.kilometros_estimados,
-                            monto_normal = EXCLUDED.monto_normal,
-                            monto_express = EXCLUDED.monto_express,
-                            observaciones = EXCLUDED.observaciones,
-                            fecha_actualizacion = CURRENT_TIMESTAMP;
-                    """
-                    conn = None
-                    try:
-                        conn = obtener_conexion_db()
-                        with conn.cursor() as cur:
-                            cur.execute(query_upsert, (nueva_zona, nuevos_km, monto_n, monto_e, nuevas_observaciones))
-                        conn.commit()
-                        st.success(f"✅ ¡Excelente! Zona '{nueva_zona}' guardada: Normal ${monto_n:.2f} | Express ${monto_e:.2f}.")
-                    except Exception as e:
-                        if conn is not None:
-                            conn.rollback()
-                        st.error(f"❌ Error al guardar en la base de datos: {e}")
-                    finally:
-                        if conn is not None:
-                            conn.close()
+from modulos.gestion_tarifas import seccion_tarifas_admin
 
 # ==============================================================================================================
 # Función principal
@@ -909,7 +803,7 @@ def mostrar_modulo_operaciones():
             st.error(f"❌ Error al consultar el expediente del cliente: {e}")
 
         #
-        # =========================================================================
+    # =========================================================================
     # PESTAÑA 7: CONSULTA INDIVIDUAL DE FLETES (MIGRADO A POSTGRESQL)
     # =========================================================================
     with tab_individual:
