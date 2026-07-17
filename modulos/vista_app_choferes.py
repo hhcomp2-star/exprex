@@ -277,7 +277,7 @@ def renderizar_panel_conductor(cedula_conductor):
                             with conexion.cursor() as cursor:
                                 # Reemplazamos los '?' por '%s' para la sintaxis de Postgres
                                 cursor.execute('''
-                                    INSERT INTO control_combustible (placa, cedula, fecha, litros_comprados, costo_usd, estacion_servicio, observaciones)
+                                    INSERT INTO control_combustible (cedula, fecha, placa, litros_comprados, costo_usd, estacion_servicio, observaciones)
                                     VALUES (%s, %s, %s, %s, %s, %s, %s)
                                 ''', (cedula_conductor, str(fecha_gasto), placa_vehiculo, litros, monto_pagado, estacion_servicio, observaciones_comb))
                             conexion.commit()
