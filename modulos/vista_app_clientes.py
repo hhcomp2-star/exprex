@@ -5,7 +5,7 @@ import sys
 import datetime as dt
 import pandas as pd
 import streamlit.components.v1 as components
-#from modulos.version_app import mostrar_version_de_la_app
+from modulos.version_app import mostrar_version_de_la_app
 
 # Obtenemos la ruta del directorio donde reside ESTE archivo actual de forma limpia
 dir_este_archivo = os.path.dirname(os.path.abspath(__file__))
@@ -67,100 +67,7 @@ def mostrar_interfaz_cliente():
     globals()['texto_legal_choferes'] = texto_legal_choferes
 
 
-     # =========================================================================
-    # 📌 SECCIÓN DE AYUDA Y SOPORTE EN LA BARRA LATERAL
-    # =========================================================================
-    with st.sidebar:
-        st.write("---")
-        st.caption("⚙️ DOCUMENTACIÓN Y SOPORTE EXPREX")
-        
-        # Un expander dentro del sidebar para que no ocupe espacio visual directo
-        with st.expander("❓ Manual de Uso", expanded=False):
-            st.markdown("""
-            **Guía Rápida de Uso:**
-            
-            * 📊 **Monitoreo:** Revise sus despachos en tiempo real desde la pestaña principal.
-            * 📋 **Detalles:** Haga clic en cualquier viaje para ver el peso (`peso_carga_kg`) y número de pedido.
-            * 🔍 **Filtro Mensual:** Si busca fletes pasados, recuerde cambiar el mes en el selector superior.
-            * 🔄 **Sincronización:** Los datos provienen directamente del centro logístico. Use el botón de actualización si realiza cambios.
-            
-            ---
-            💬 **¿Problemas con la App?**  
-            Comunícate de inmediato con el administrador del sistema para reportar fallas o solicitar soporte técnico.
-            """)
-            
-            # Pie de página sutil con la versión que congelamos con Engrampa
-            #mostrar_version_de_la_app()
-            #st.caption("ExpreX v1.7.5 • 2026 🚛")
-
-        # --- OPCIÓN 2: MARCO LEGAL Y OPERATIVO ---
-        with st.expander("📄 Marco Legal y Políticas", expanded=False):
-            st.markdown("""
-            ### Contrato de Uso y Condiciones de Servicio
-            *ExpreX Logística — v1.7.8 (2026)*
-            
-            Al utilizar esta plataforma, usted acepta las siguientes políticas operativas:
-            
-            ---
-            
-            #### 1. Cuentas y Accesos
-            El acceso al panel se otorga exclusivamente a personal autorizado por la empresa contratante. Está prohibido compartir credenciales con terceros.
-            
-            #### 2. Solicitud y Cancelación de Fletes
-            * **Tiempos de Solicitud:** Todo flete debe programarse en el sistema con un mínimo de **24 horas** de anticipación.
-            * **Cancelaciones:** Válidas sin penalización antes de que el vehículo cambie a estatus *'En Ruta'*.
-            
-            #### 3. Responsabilidad sobre la Carga
-            La empresa se hace responsable de la mercancía desde el enganche y salida del origen hasta la entrega en destino, conforme a las leyes de transporte terrestre vigentes.
-            
-            #### 4. Tiempos de Espera (Demoras)
-            El servicio incluye **2 horas libres** para la carga en origen y **2 horas libres** para la descarga en destino. Excedido este tiempo, se aplicará la tarifa de demoras estándar contractual.
-            
-            #### 5. Uso de Datos y Privacidad
-            Los volúmenes de carga, rutas y datos de facturación son tratados bajo estricta confidencialidad comercial.
-            
-            ---
-            *El uso continuado de la aplicación ExpreX implica la aceptación total de estos términos.*
-            """)
-
-        # --- TÉRMINOS Y CONDICIONES DESDE TERMINOS.TXT ---
-        with st.expander("📄 Términos y Condiciones", expanded=False):
-            # Mostramos el contenido exacto del archivo txt en pantalla
-            st.markdown(texto_legal_choferes)
-
-        st.markdown("---")
-
-        # =========================================================================
-        # ⚙️ CAMBIO DEL BOTÓN DE SOPORTE POR EL LINK_BUTTON DINÁMICO
-        # =========================================================================
-        #import urllib.parse
-
-        # 1. Obtenemos el teléfono del chofer logueado (si está en session_state, si no usamos el tuyo por defecto)
-        #telefono_chofer = st.session_state.get('usuario_telefono', '584140335554')
-        
-        # 2. Armamos y codificamos el mensaje
-        #mensaje_soporte = "Hola, soy chofer de ExpreX y necesito soporte técnico con mi usuario en la aplicación de Exprex Logística."
-        #mensaje_codificado = urllib.parse.quote(mensaje_soporte)
-        
-        # 3. Generamos la URL
-        #url_whatsapp = f"https://wa.me/{telefono_chofer}?text={mensaje_codificado}"
-
-        # 4. Colocamos el link_button directo en el sidebar
-        #st.link_button("❓ Soporte", url=url_whatsapp, use_container_width=True)
-
-        # =========================================================================
-
-        if st.sidebar.button("🚪 Cerrar Sesión", use_container_width=True):
-            st.session_state.autenticado = False
-            st.session_state.usuario_cedula = ""
-            st.session_state.usuario_nombre = ""
-            st.session_state.usuario_rol = ""
-            st.session_state.cliente_id = None
-            st.session_state.vista_login = "login"
-            st.rerun()
-
-        # Pequeño pie de página unificado abajo de los dos módulos
-    #mostrar_version_de_la_app()
+    
 
 
 
@@ -684,5 +591,97 @@ def mostrar_interfaz_cliente():
             except Exception as e:
                 st.error(f"❌ Error al procesar el rastreo del despacho: {e}")
     #
-   
-       
+    # =========================================================================
+    # 📌 SECCIÓN DE AYUDA Y SOPORTE EN LA BARRA LATERAL
+    # =========================================================================
+    with st.sidebar:
+        st.write("---")
+        st.caption("⚙️ DOCUMENTACIÓN Y SOPORTE EXPREX")
+        
+        # Un expander dentro del sidebar para que no ocupe espacio visual directo
+        with st.expander("❓ Manual de Uso", expanded=False):
+            st.markdown("""
+            **Guía Rápida de Uso:**
+            
+            * 📊 **Monitoreo:** Revise sus despachos en tiempo real desde la pestaña principal.
+            * 📋 **Detalles:** Haga clic en cualquier viaje para ver el peso (`peso_carga_kg`) y número de pedido.
+            * 🔍 **Filtro Mensual:** Si busca fletes pasados, recuerde cambiar el mes en el selector superior.
+            * 🔄 **Sincronización:** Los datos provienen directamente del centro logístico. Use el botón de actualización si realiza cambios.
+            
+            ---
+            💬 **¿Problemas con la App?**  
+            Comunícate de inmediato con el administrador del sistema para reportar fallas o solicitar soporte técnico.
+            """)
+            
+            # Pie de página sutil con la versión que congelamos con Engrampa
+            mostrar_version_de_la_app()
+            #st.caption("ExpreX v1.7.5 • 2026 🚛")
+
+        # --- OPCIÓN 2: MARCO LEGAL Y OPERATIVO ---
+        with st.expander("📄 Marco Legal y Políticas", expanded=False):
+            st.markdown("""
+            ### Contrato de Uso y Condiciones de Servicio
+            *ExpreX Logística — v1.7.8 (2026)*
+            
+            Al utilizar esta plataforma, usted acepta las siguientes políticas operativas:
+            
+            ---
+            
+            #### 1. Cuentas y Accesos
+            El acceso al panel se otorga exclusivamente a personal autorizado por la empresa contratante. Está prohibido compartir credenciales con terceros.
+            
+            #### 2. Solicitud y Cancelación de Fletes
+            * **Tiempos de Solicitud:** Todo flete debe programarse en el sistema con un mínimo de **24 horas** de anticipación.
+            * **Cancelaciones:** Válidas sin penalización antes de que el vehículo cambie a estatus *'En Ruta'*.
+            
+            #### 3. Responsabilidad sobre la Carga
+            La empresa se hace responsable de la mercancía desde el enganche y salida del origen hasta la entrega en destino, conforme a las leyes de transporte terrestre vigentes.
+            
+            #### 4. Tiempos de Espera (Demoras)
+            El servicio incluye **2 horas libres** para la carga en origen y **2 horas libres** para la descarga en destino. Excedido este tiempo, se aplicará la tarifa de demoras estándar contractual.
+            
+            #### 5. Uso de Datos y Privacidad
+            Los volúmenes de carga, rutas y datos de facturación son tratados bajo estricta confidencialidad comercial.
+            
+            ---
+            *El uso continuado de la aplicación ExpreX implica la aceptación total de estos términos.*
+            """)
+
+        # --- TÉRMINOS Y CONDICIONES DESDE TERMINOS.TXT ---
+        with st.expander("📄 Términos y Condiciones", expanded=False):
+            # Mostramos el contenido exacto del archivo txt en pantalla
+            st.markdown(texto_legal_choferes)
+
+        st.markdown("---")
+
+        # =========================================================================
+        # ⚙️ CAMBIO DEL BOTÓN DE SOPORTE POR EL LINK_BUTTON DINÁMICO
+        # =========================================================================
+        import urllib.parse
+
+        # 1. Obtenemos el teléfono del chofer logueado (si está en session_state, si no usamos el tuyo por defecto)
+        telefono_chofer = st.session_state.get('usuario_telefono', '584140335554')
+        
+        # 2. Armamos y codificamos el mensaje
+        mensaje_soporte = "Hola, soy chofer de ExpreX y necesito soporte técnico con mi usuario en la aplicación de Exprex Logística."
+        mensaje_codificado = urllib.parse.quote(mensaje_soporte)
+        
+        # 3. Generamos la URL
+        url_whatsapp = f"https://wa.me/{telefono_chofer}?text={mensaje_codificado}"
+
+        # 4. Colocamos el link_button directo en el sidebar
+        st.link_button("❓ Soporte", url=url_whatsapp, use_container_width=True)
+
+        # =========================================================================
+
+        if st.sidebar.button("🚪 Cerrar Sesión", use_container_width=True):
+            st.session_state.autenticado = False
+            st.session_state.usuario_cedula = ""
+            st.session_state.usuario_nombre = ""
+            st.session_state.usuario_rol = ""
+            st.session_state.cliente_id = None
+            st.session_state.vista_login = "login"
+            st.rerun()
+
+        # Pequeño pie de página unificado abajo de los dos módulos
+        mostrar_version_de_la_app()       
