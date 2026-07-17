@@ -174,3 +174,60 @@ def seccion_tarifas_admin():
                                 conn.close()
         else:
             st.warning(f"⚠️ El cliente **{cliente_sel}** no tiene sucursales activas registradas. Agrégalas primero antes de definir sus tarifas.")
+
+
+def seccion_tarifas_clientes(id_cliente_autenticado):
+    st.subheader("🔎 Mis Tarifas y Rutas Frecuentes")
+    st.write("Consulta los tramos preconfigurados, distancias y costos estimados desde tus sucursales.")
+
+    # Filtro rápido de texto para el cliente
+    busqueda_destino = st.text_input("Buscar por sucursal de origen o zona de destino:", placeholder="Ej. Centro de distribución, Valencia...").strip()
+
+    query = """
+        SELECT s.nombre_agencia AS "Origen (Sucursal)",
+               s.ciudad AS "Ciudad Origen",
+               t.zona AS "Destino (Zona)", 
+               t.kilometros_estimados AS "Km Aprox.", 
+               t.monto_normal AS "Tarifa Normal ($)",
+               t.monto_express AS "Tarifa Express ($)",
+               t.observaciones AS "Notas/Condiciones"
+        FROM tarifas_tentativas t
+        JOIN sucursales s ON t.id_sucursal = s.id_sucursal
+        WHERE s.id_cliente = %s AND s.activa = 'Sí'
+    """
+    
+    parametros = [id_cliente_autenticado]
+    
+    if busqueda_destino:
+        query += " AND (t.zona ILIKE %s OR s.nombre_agencia ILIKE %s)"
+        parametros.extend([f"%{busqueda_destino}%", f"%{busqueda_destino}%"])
+        
+    query += " ORDER BY s.nombre_agencia, t.zona ASC"
+
+    conn = None
+    df_tarifas = pd.DataFrame()
+    
+    try:
+        conn = obtener_conexion_db()
+        df_tarifas = pd.read_sql(query, conn, params=parametros)
+    except Exception as e:
+        st.error(f"Error al cargar el catálogo de tarifas: {e}")
+    finally:
+        if conn is not None:
+            conn.close()
+
+    # Despliegue de los datos
+    if not df_tarifas.empty:
+        # Combinamos Nombre + Ciudad para hacer una columna de Origen súper limpia si lo deseas,
+        # o dejamos que Streamlit muestre ambas.
+        st.dataframe(
+            df_tarifas.style.format({
+                "Km Aprox.": "{:.1f} Km",
+                "Tarifa Normal ($)": "${:.2f}",
+                "Tarifa Express ($)": "${:.2f}"
+            }),
+            use_container_width=True,
+            hide_index=True
+        )
+    else:
+        st.info("No tienes tarifas asignadas para los criterios seleccionados en este momento. Si necesitas cotizar una nueva ruta, contacta a operaciones de ExpreX.")

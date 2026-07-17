@@ -6,6 +6,7 @@ import datetime as dt
 import pandas as pd
 import streamlit.components.v1 as components
 from modulos.version_app import mostrar_version_de_la_app
+from modulos.gestion_tarifas import seccion_tarifas_clientes
 from modulos.utils import obtener_conexion_db
 
 # Obtenemos la ruta del directorio donde reside ESTE archivo actual de forma limpia
@@ -45,55 +46,8 @@ def verificar_cliente_b2b(rif: str, contrasena: str):
         st.error(f"❌ Error al conectar con la base de datos PostgreSQL: {e}")
         return None
 
-def seccion_tarifas_clientes():
-    st.header("📋 Tarifas Estimadas de Traslado")
-    st.write("Consulta el costo aproximado de tu traslado en nuestras dos modalidades de servicio.")
+#
 
-    zona_buscada = st.text_input(
-        "Escribe el nombre de la zona o ciudad a donde vas:", 
-        placeholder="Ej. Valencia, Caracas Este, Maracay..."
-    ).strip()
-
-    if zona_buscada:
-        query_busqueda = """
-            SELECT zona AS "Zona / Destino", 
-                   kilometros_estimados AS "Distancia Aprox.",
-                   monto_normal AS "Tarifa Normal ($)",
-                   monto_express AS "Tarifa Express ($)",
-                   observaciones AS "Detalles"
-            FROM tarifas_tentativas
-            WHERE zona ILIKE %s
-            ORDER BY zona ASC
-        """
-        
-        conn = None
-        df_resultados = pd.DataFrame()
-        try:
-            conn = obtener_conexion_db()
-            df_resultados = pd.read_sql(query_busqueda, conn, params=(f"%{zona_buscada}%",))
-        except Exception as e:
-            st.error(f"❌ Error al consultar la base de datos: {e}")
-        finally:
-            if conn is not None:
-                conn.close()
-
-        if not df_resultados.empty:
-            st.success(f"Se encontraron {len(df_resultados)} coincidencias:")
-            
-            # Formateamos la tabla para mostrar kilómetros y montos con su símbolo
-            st.dataframe(
-                df_resultados.style.format({
-                    "Distancia Aprox.": "{:.1f} Km",
-                    "Tarifa Normal ($)": "${:.2f}",
-                    "Tarifa Express ($)": "${:.2f}"
-                }),
-                use_container_width=True, 
-                hide_index=True
-            )
-        else:
-            st.warning("⚠️ No se encontró una tarifa registrada para esa zona. Por favor, solicita una cotización personalizada con nosotros.")
-    else:
-        st.info("Escribe tu destino arriba para conocer las tarifas Normal y Express al instante.")
 
 # =========================================================================
 # 🏢 PANEL PRINCIPAL DEL CLIENTE (MÓDULO INDEPENDIENTE)
@@ -384,7 +338,7 @@ def mostrar_interfaz_cliente():
     # ==========================================================================
 
     with pestana_tarifas:
-        seccion_tarifas_clientes()
+        seccion_tarifas_clientes(id_cliente)
     #
     # =========================================================================
     # 📌 PESTAÑA: HISTORIAL DE FLETES (FILTRADO POR MESES Y CABECERAS LIMPIAS)
