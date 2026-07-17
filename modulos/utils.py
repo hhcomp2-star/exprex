@@ -114,4 +114,39 @@ def contar_viajes_en_ruta(cedula_conductor: str) -> int:
     except Exception:
         return 0
     
-   
+# =============================================================================================================================
+
+
+
+def mostrar_evidencia_entrega(ruta_desde_db):
+    """
+    Renderiza la foto de entrega si está en la PC local (Héctor), 
+    o muestra un mensaje informativo si se accede desde otro dispositivo.
+    """
+    if not ruta_desde_db:
+        st.warning("⚠️ Este viaje no tiene ninguna evidencia de foto registrada.")
+        return
+
+    # Ruta raíz en tu Linux Mint
+    ruta_raiz_hector = "/home/hector/exprex"
+    ruta_absoluta_local = os.path.join(ruta_raiz_hector, ruta_desde_db) if not ruta_desde_db.startswith('/') else ruta_desde_db
+    
+    # Si la ruta en la DB ya es relativa, la unimos con la raíz
+    if not os.path.isabs(ruta_desde_db):
+        ruta_absoluta_local = os.path.join(ruta_raiz_hector, ruta_desde_db)
+    else:
+        ruta_absoluta_local = ruta_desde_db
+
+    if os.path.exists(ruta_absoluta_local):
+        st.success("📸 Evidencia localizada en el almacenamiento local:")
+        st.image(ruta_absoluta_local, caption=f"Evidencia: {os.path.basename(ruta_desde_db)}", use_container_width=True)
+    else:
+        st.info("📦 **Almacenamiento Local Protegido**")
+        st.markdown(
+            f"""
+            La imagen de evidencia para este flete (`{os.path.basename(ruta_desde_db)}`) 
+            se encuentra resguardada de forma segura en el servidor central de **ExpreX**.
+            
+            💡 *Si necesitas visualizar o descargar este archivo, por favor solicítalo directamente a la administración.*
+            """
+        )

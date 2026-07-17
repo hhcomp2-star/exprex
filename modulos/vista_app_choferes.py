@@ -526,29 +526,39 @@ def actualizar_estatus_viaje(id_viaje, nuevo_estatus, archivo_foto_streamlit=Non
         # 🛠️ MIGRADO A POSTGRESQL (RAILWAY)
         with obtener_conexion_db() as conexion:
             with conexion.cursor() as cursor:
-                
+                #
                 if nuevo_estatus == 'Entregado':
-                    # 📁 1️⃣ GUARDADO FÍSICO DE LA FOTO Y OBTENCIÓN DE RUTA DE TEXTO
+                    # 📁 1️⃣ GUARDADO FÍSICO LOCAL (Ruta absoluta controlada)
                     ruta_base_datos = None  # Esto es lo que guardaremos en Postgres
                     
                     if archivo_foto_streamlit is not None:
-                        # Definimos y aseguramos la existencia de la carpeta local
-                        directorio_fotos = "exprex/fotos_entregas"
+                        import os
+                        
+                        # 🎯 Apuntamos directo a la carpeta en tu directorio de trabajo actual
+                        directorio_actual = os.getcwd() 
+                        directorio_fotos = os.path.join(directorio_actual, "fotos_entregas")
+                        
+                        # Nos aseguramos de que la carpeta física exista en tu disco
                         os.makedirs(directorio_fotos, exist_ok=True)
                         
                         # Generamos el nombre del archivo basado en el id_viaje
                         nombre_archivo = f"viaje_{id_viaje}_evidencia.jpg"
                         ruta_fisica_local = os.path.join(directorio_fotos, nombre_archivo)
                         
-                        # Extraemos los bytes del buffer de Streamlit
-                        bytes_foto = archivo_foto_streamlit.getvalue()
+                        try:
+                            # Extraemos los bytes y guardamos físicamente en tu Linux Mint
+                            bytes_foto = archivo_foto_streamlit.getvalue()
+                            with open(ruta_fisica_local, "wb") as archivo_disco:
+                                archivo_disco.write(bytes_foto)
+                            
+                            # Esta es la ruta corta que guardamos en la base de datos (Postgres)
+                            # Ej: "fotos_entregas/viaje_138_evidencia.jpg"
+                            ruta_base_datos = f"fotos_entregas/{nombre_archivo}"
+                            
+                        except Exception as e:
+                            st.error(f"❌ Error al escribir la foto en el disco local: {e}")
+
                         
-                        # Guardamos el archivo físicamente en el servidor
-                        with open(ruta_fisica_local, "wb") as archivo_disco:
-                            archivo_disco.write(bytes_foto)
-                        
-                        # Definimos la ruta relativa que guardará la base de datos (Ej: 'fotos_entregas/viaje_126_evidencia.jpg')
-                        ruta_base_datos = f"fotos_entregas/{nombre_archivo}"
 
                     # 2️⃣ LEER DATOS REALES DEL VIAJE
                     cursor.execute("""
