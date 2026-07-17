@@ -260,6 +260,7 @@ def renderizar_panel_conductor(cedula_conductor):
                 # Usamos dt.date.today() que es el alias limpio que dejamos arriba
                 placa_vehiculo = st.text_input("Placa:")
                 fecha_gasto = st.date_input("📅 Fecha del Suministro:", value=dt.date.today())
+                kilometraje_actual = st.number_input("Kilometraje Actual:", min_value=0, step=10)
                 litros = st.number_input("🧪 Litros Surtidos:", min_value=0.0, step=1.0)
                 monto_pagado = st.number_input("💵 Monto Total Pagado ($):", min_value=0.0, step=1.0)
                 estacion_servicio = st.text_input("🏪 Estación de Servicio o Ubicación:")
@@ -272,14 +273,12 @@ def renderizar_panel_conductor(cedula_conductor):
                     st.error("❌ Error: Debe ingresar valores válidos de litros y costo monetario.")
                 else:
                     try:
-                        # 🛠️ MIGRADO A POSTGRESQL (RAILWAY)
                         with obtener_conexion_db() as conexion:
                             with conexion.cursor() as cursor:
-                                # Reemplazamos los '?' por '%s' para la sintaxis de Postgres
                                 cursor.execute('''
-                                    INSERT INTO control_combustible (cedula, fecha, placa, litros_comprados, costo_usd, estacion_servicio, observaciones)
-                                    VALUES (%s, %s, %s, %s, %s, %s, %s)
-                                ''', (cedula_conductor, str(fecha_gasto), placa_vehiculo, litros, monto_pagado, estacion_servicio, observaciones_comb))
+                                    INSERT INTO control_combustible (cedula, fecha, placa, km_actual, litros_comprados, costo_usd, estacion_servicio, observaciones)
+                                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                                ''', (cedula_conductor, str(fecha_gasto), placa_vehiculo, kilometraje_actual, litros, monto_pagado, estacion_servicio, observaciones_comb))
                             conexion.commit()
                         st.success("🎉 ¡Reporte de combustible guardado con éxito!")
                     except Exception as e:
