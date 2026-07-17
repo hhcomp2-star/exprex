@@ -82,13 +82,17 @@ def seccion_tarifas_admin():
             col1, col2, col3 = st.columns(3)
             with col1:
                 nuevos_km = st.number_input("Distancia (Km):", min_value=0.1, step=1.0, format="%.1f")
+            
+            # Aplicamos la regla del kilometraje mínimo (mínimo de 8 km para el cálculo)
+            km_para_calculo = max(8.0, nuevos_km)
+            
             with col2:
-                # Sugerimos por defecto Km * 2.5 pero permitimos editar
-                val_normal = nuevos_km * 2.5
+                # Sugerimos por defecto el cálculo con el mínimo de 8 km aplicado
+                val_normal = km_para_calculo * 2.5
                 monto_n = st.number_input("Precio Normal ($):", min_value=0.0, value=val_normal, step=1.0, format="%.2f")
             with col3:
-                # Sugerimos por defecto Km * 4.0 pero permitimos editar
-                val_express = nuevos_km * 4.0
+                # Sugerimos por defecto el cálculo con el mínimo de 8 km aplicado
+                val_express = km_para_calculo * 4.0
                 monto_e = st.number_input("Precio Express ($):", min_value=0.0, value=val_express, step=1.0, format="%.2f")
             
             nuevas_observaciones = st.text_area("Notas adicionales:", placeholder="Tarifa base. Válida para camiones de capacidad estándar.")
