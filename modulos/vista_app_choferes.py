@@ -364,23 +364,45 @@ def renderizar_panel_conductor(cedula_conductor):
             # =========================================================================
             total_viajes = len(df_historial)
             
+            #total_viajes = len(df_historial)
+            
             # Sumamos los pagos asegurándonos de tratar los nulos como 0.0
             monto_acumulado = pd.to_numeric(df_historial['pago_chofer_usd'], errors='coerce').fillna(0.0).sum()
             
-            # Usamos columnas adaptadas para que queden alineadas y compactas en el celular
-            col_met1, col_met2 = st.columns(2, gap="small")
+            # Reemplazo de st.metric por contenedores HTML nativos ultra-compactos para móvil
+            st.markdown(
+                f"""
+                <div style="display: flex; gap: 10px; justify-content: space-between; margin-bottom: 15px;">
+                    <div style="flex: 1; background-color: #f8f9fa; border: 1px solid #e9ecef; padding: 10px; border-radius: 8px; text-align: center;">
+                        <span style="font-size: 0.8rem; color: #6c757d; display: block; font-weight: 500;">Viajes Realizados</span>
+                        <span style="font-size: 1.3rem; font-weight: bold; color: #212529;">{total_viajes}</span>
+                    </div>
+                    <div style="flex: 1; background-color: #f8f9fa; border: 1px solid #e9ecef; padding: 10px; border-radius: 8px; text-align: center;">
+                        <span style="font-size: 0.8rem; color: #6c757d; display: block; font-weight: 500;">Monto Acumulado</span>
+                        <span style="font-size: 1.3rem; font-weight: bold; color: #2e7d32;">${monto_acumulado:,.2f}</span>
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+            # Sumamos los pagos asegurándonos de tratar los nulos como 0.0
+            #monto_acumulado = pd.to_numeric(df_historial['pago_chofer_usd'], errors='coerce').fillna(0.0).sum()
             
-            with col_met1:
-                st.metric(
-                    label="Viajes Realizados", 
-                    value=f"{total_viajes}"
-                )
+            # Usamos columnas adaptadas para que queden alineadas y compactas en el celular
+            #col_met1, col_met2 = st.columns(2, gap="small")
+            
+            #with col_met1:
+            #    st.metric(
+            #        label="Viajes Realizados", 
+            #        value=f"{total_viajes}"
+            #    )
                 
-            with col_met2:
-                st.metric(
-                    label="Monto Acumulado", 
-                    value=f"${monto_acumulado:,.2f}"
-                )
+            #with col_met2:
+            #    st.metric(
+            #        label="Monto Acumulado", 
+            #        value=f"${monto_acumulado:,.2f}"
+            #    )
             
             st.write("---")  # Línea sutil divisoria
 
