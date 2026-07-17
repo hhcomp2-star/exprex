@@ -110,8 +110,8 @@ def mostrar_modulo_operaciones():
         "📝 Registrar Despacho",
         "🚚 Unidades en Carretera", 
         "🔄 Modificar Viaje (Contingencias)",
-        "📊 Historial y Auditoría"
-        " Gestión de Tarifas"
+        "📊 Historial y Auditoría",
+        "💰 Gestión de Tarifas"
     ])
     
     # =========================================================================
@@ -963,5 +963,6 @@ def mostrar_modulo_operaciones():
                         
             except Exception as e:
                 st.error(f"Error al cargar el detalle del flete: {e}")
+
     with tab_gestion_tarifas:
         seccion_tarifas_admin()
