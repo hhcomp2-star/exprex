@@ -33,7 +33,8 @@ def seccion_tarifas_admin():
     # --- TAB 1: BUSCADOR ---
     with tab1:
         busqueda = st.text_input("Buscar zona existente:", placeholder="Ej. Valencia...").strip()
-        query_base = "SELECT zona AS 'Zona', monto_aproximado AS 'Precio ($)', observaciones AS 'Observaciones', fecha_actualizacion AS 'Última Actualización' FROM tarifas_tentativas"
+        query_base = 'SELECT zona AS "Zona", monto_aproximado AS "Precio ($)", observaciones AS "Observaciones", fecha_actualizacion AS "Última Actualización" FROM tarifas_tentativas'
+        #query_base = "SELECT zona AS 'Zona', monto_aproximado AS 'Precio ($)', observaciones AS 'Observaciones', fecha_actualizacion AS 'Última Actualización' FROM tarifas_tentativas"
         
         conn = None
         df = pd.DataFrame()
