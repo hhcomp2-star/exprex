@@ -7,22 +7,32 @@ import pandas as pd
 import streamlit.components.v1 as components
 #from modulos.version_app import mostrar_version_de_la_app
 
+# Obtenemos la ruta del directorio donde reside ESTE archivo actual
+dir_este_archivo = os.path.dirname(os.path.abspath(__file__))
 
-ruta_raiz = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Definimos la ruta raíz (un nivel arriba, ya que estamos dentro de 'modulos')
+ruta_raiz = os.path.dirname(dir_este_archivo)
+
 if ruta_raiz not in sys.path:
     sys.path.insert(0, ruta_raiz)
 
-# Importamos la función de conexión a PostgreSQL que creamos para tu proyecto
+# Importamos la función de conexión a PostgreSQL
 from modulos.utils import obtener_conexion_db
 
-# --- CARGAR TEXTO LEGAL DESDE LA CARPETA MODULOS ---
-ruta_terminos = os.path.join("modulos", "terminos.txt")
+# --- CARGAR TEXTO LEGAL DE FORMA ABSOLUTA ---
+# Como 'terminos.txt' está en la misma carpeta 'modulos' que este script:
+ruta_terminos = os.path.join(dir_este_archivo, "terminos.txt")
+
+# En caso de que 'terminos.txt' esté en la raíz en lugar de dentro de 'modulos', 
+# usamos este respaldo automático:
+if not os.path.exists(ruta_terminos):
+    ruta_terminos = os.path.join(ruta_raiz, "terminos.txt")
 
 try:
     with open(ruta_terminos, "r", encoding="utf-8") as f:
         texto_legal_choferes = f.read()
 except Exception as e:
-    texto_legal_choferes = f"⚠️ No se pudo cargar el archivo de términos en `{ruta_terminos}`: {e}"
+    texto_legal_choferes = f"⚠️ No se pudo encontrar ni cargar el archivo de términos en `{ruta_terminos}`: {e}"
 
 # =========================================================================
 # 🕵️‍♂️ VERIFICACIÓN DE CREDENCIALES CORPORATIVAS
@@ -602,7 +612,7 @@ def mostrar_interfaz_cliente():
             """)
             
             # Pie de página sutil con la versión que congelamos con Engrampa
-            mostrar_version_de_la_app()
+            #mostrar_version_de_la_app()
             #st.caption("ExpreX v1.7.5 • 2026 🚛")
 
         # --- OPCIÓN 2: MARCO LEGAL Y OPERATIVO ---
