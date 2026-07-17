@@ -116,8 +116,6 @@ def contar_viajes_en_ruta(cedula_conductor: str) -> int:
     
 # =============================================================================================================================
 
-
-
 def mostrar_evidencia_entrega(ruta_desde_db):
     """
     Renderiza la foto de entrega si está en la PC local (Héctor), 
@@ -129,17 +127,21 @@ def mostrar_evidencia_entrega(ruta_desde_db):
 
     # Ruta raíz en tu Linux Mint
     ruta_raiz_hector = "/home/hector/exprex"
-    ruta_absoluta_local = os.path.join(ruta_raiz_hector, ruta_desde_db) if not ruta_desde_db.startswith('/') else ruta_desde_db
     
-    # Si la ruta en la DB ya es relativa, la unimos con la raíz
+    # Corregido: Validamos si es absoluta o relativa usando os.path directamente
     if not os.path.isabs(ruta_desde_db):
         ruta_absoluta_local = os.path.join(ruta_raiz_hector, ruta_desde_db)
     else:
         ruta_absoluta_local = ruta_desde_db
 
+    # Verificamos si el archivo existe físicamente en el disco
     if os.path.exists(ruta_absoluta_local):
         st.success("📸 Evidencia localizada en el almacenamiento local:")
-        st.image(ruta_absoluta_local, caption=f"Evidencia: {os.path.basename(ruta_desde_db)}", use_container_width=True)
+        st.image(
+            ruta_absoluta_local, 
+            caption=f"Evidencia: {os.path.basename(ruta_desde_db)}", 
+            use_container_width=True
+        )
     else:
         st.info("📦 **Almacenamiento Local Protegido**")
         st.markdown(
