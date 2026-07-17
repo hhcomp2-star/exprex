@@ -16,6 +16,7 @@ if ruta_raiz not in sys.path:
 from modulos.utils import obtener_conexion_db, contar_viajes_por_salir, reproducir_alerta_victoria
 from modulos.version_app import mostrar_version_de_la_app
 from modulos.soporte import llamar_soporte
+from utils import mostrar_evidencia_entrega
 
 ruta_terminos = os.path.join("modulos", "terminos.txt")
 
@@ -424,13 +425,15 @@ def renderizar_panel_conductor(cedula_conductor):
                     with obtener_conexion_db() as conexion:
                         with conexion.cursor() as cursor:
                             cursor.execute('''
-                                SELECT cliente_solicitante, origen, destino, tipo_material, peso_carga_kg, estatus_viaje, num_pedido, tipo_viaje, pago_chofer_usd
+                                SELECT cliente_solicitante, origen, destino, tipo_material, peso_carga_kg, estatus_viaje, num_pedido, tipo_viaje, pago_chofer_usd, foto_evidencia
                                 FROM viajes 
                                 WHERE id_viaje = %s
                             ''', (id_historial_sel,))
                             v_det = cursor.fetchone()
                     
                     if v_det:
+                        #ruta_foto = fila_viaje['foto_evidencia'] # O como recuperes el campo de la consulta
+                        ruta_foto = v_det[10] if v_det[10] else st.info("No existe foto evidencia del viaje") # O como recuperes el campo de la consulta
                         pago_flotante = float(v_det[8]) if v_det[8] is not None else 0.0
                         st.info(f"""
                         **Detalle del Flete N° {id_historial_sel}**
@@ -442,6 +445,11 @@ def renderizar_panel_conductor(cedula_conductor):
                         * **Estatus Final:** {v_det[5]}
                         * **Pago al Chofer (USD):** ${pago_flotante:.2f}
                         """)
+
+                        st.caption("Foto evidencia: Factura")
+                        
+                        mostrar_evidencia_entrega(ruta_foto)
+
                 except Exception as e:
                     st.error(f"Error al abrir detalle individual: {e}")
 
