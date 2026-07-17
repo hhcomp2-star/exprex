@@ -6,6 +6,7 @@ import datetime as dt
 import pandas as pd
 import streamlit.components.v1 as components
 from modulos.version_app import mostrar_version_de_la_app
+from modulos.utils import obtener_conexion_db
 
 # Obtenemos la ruta del directorio donde reside ESTE archivo actual de forma limpia
 dir_este_archivo = os.path.dirname(os.path.abspath(__file__))
@@ -44,12 +45,55 @@ def verificar_cliente_b2b(rif: str, contrasena: str):
         st.error(f"❌ Error al conectar con la base de datos PostgreSQL: {e}")
         return None
 
+def seccion_tarifas_clientes():
+    st.header("📋 Precios Tentativos de Traslado")
+    st.write("Consulta el costo aproximado de tu flete según la zona geográfica de destino.")
+
+    zona_buscada = st.text_input(
+        "Escribe el nombre de la zona o ciudad a donde vas:", 
+        placeholder="Ej. Valencia, Caracas Este, Maracay..."
+    ).strip()
+
+    if zona_buscada:
+        # Buscamos coincidencias aproximadas
+        query_busqueda = """
+            SELECT zona AS "Zona / Destino", 
+                   monto_aproximado AS "Monto Aprox. ($)", 
+                   observaciones AS "Detalles"
+            FROM tarifas_tentativas
+            WHERE zona ILIKE %s
+            ORDER BY zona ASC
+        """
+        conn = None
+        try:
+            # 1. Obtenemos la conexión llamando a tu función (sin argumentos)
+            conn = obtener_conexion_db()
+            
+            # 2. Leemos la consulta directamente a un DataFrame de Pandas
+            df_resultados = pd.read_sql(query_busqueda, conn, params=(f"%{zona_buscada}%",))
+            
+        except Exception as e:
+            st.error(f"❌ Error al consultar la base de datos: {e}")
+            df_resultados = pd.DataFrame() # Creamos un DataFrame vacío en caso de fallo
+            
+        finally:
+            # 3. Nos aseguramos de cerrar la conexión si logró abrirse
+            if conn is not None:
+                conn.close()
+
+        # Renderizado de los resultados...
+        if not df_resultados.empty:
+            st.success(f"Se encontraron {len(df_resultados)} coincidencias:")
+            st.dataframe(df_resultados, use_container_width=True, hide_index=True)
+        else:
+            st.warning("⚠️ No se encontró una tarifa registrada para esa zona. Por favor, solicita una cotización personalizada con nosotros.")
+
 # =========================================================================
 # 🏢 PANEL PRINCIPAL DEL CLIENTE (MÓDULO INDEPENDIENTE)
 # =========================================================================
 def mostrar_interfaz_cliente():
     # Importación local segura dentro de la función de ejecución de la interfaz
-    from modulos.utils import obtener_conexion_db
+    
 
     # --- CARGAR TEXTO LEGAL DE FORMA ABSOLUTA DENTRO DEL PANEL ---
     ruta_terminos = os.path.join(dir_este_archivo, "terminos.txt")
@@ -161,8 +205,9 @@ def mostrar_interfaz_cliente():
     # -------------------------------------------------------------------------
     # PESTAÑAS DE TRABAJO
     # -------------------------------------------------------------------------
-    pestana_solicitud, pestana_historial, consulta_despachos = st.tabs([
+    pestana_solicitud, pestana_tarifas, pestana_historial, consulta_despachos = st.tabs([
         "🚀 Solicitar Nuevo Flete", 
+        "💵 Consultar Tarifas",
         "🕒 Historial y Status de Fletes",
         "Consulta Individual"
     ])
@@ -326,7 +371,13 @@ def mostrar_interfaz_cliente():
         else:
             st.warning("⚠️ No se encontraron sucursales activas registradas para su cuenta corporativa. Contacte a soporte de ExpreX.")
 
-    # --- PESTAÑA 2: HISTORIAL DIRECTO ---
+    #
+    # ==========================================================================
+    # Consultar tarifas tentativas del flete
+    # ==========================================================================
+
+    with pestana_tarifas:
+        seccion_tarifas_clientes()
     #
     # =========================================================================
     # 📌 PESTAÑA: HISTORIAL DE FLETES (FILTRADO POR MESES Y CABECERAS LIMPIAS)

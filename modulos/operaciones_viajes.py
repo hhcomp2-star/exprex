@@ -17,17 +17,101 @@ if ruta_raiz not in sys.path:
 from modulos.utils import obtener_conexion_db
 from modulos.asignacion_previa import renderizar_pestana_asignar
 
+import streamlit as st
+import pandas as pd
+from modulos.utils import obtener_conexion_db  # O como tengas tu importación aquí
+# =============================================================================================================
+# Gestión de tarifas
+# =============================================================================================================
+
+def seccion_tarifas_admin():
+    st.header("⚙️ Gestión de Tarifas Tentativas")
+    st.write("Administra el listado de precios de fletes por zona geográfica.")
+
+    tab1, tab2 = st.tabs(["🔎 Ver y Buscar Tarifas", "➕ Agregar / Modificar Tarifa"])
+
+    # --- TAB 1: BUSCADOR ---
+    with tab1:
+        busqueda = st.text_input("Buscar zona existente:", placeholder="Ej. Valencia...").strip()
+        query_base = "SELECT zona AS 'Zona', monto_aproximado AS 'Precio ($)', observaciones AS 'Observaciones', fecha_actualizacion AS 'Última Actualización' FROM tarifas_tentativas"
+        
+        conn = None
+        df = pd.DataFrame()
+        try:
+            conn = obtener_conexion_db()
+            if busqueda:
+                query = query_base + " WHERE zona ILIKE %s ORDER BY zona ASC"
+                df = pd.read_sql(query, conn, params=(f"%{busqueda}%",))
+            else:
+                query = query_base + " ORDER BY zona ASC"
+                df = pd.read_sql(query, conn)
+        except Exception as e:
+            st.error(f"❌ Error al consultar las tarifas: {e}")
+        finally:
+            if conn is not None:
+                conn.close()
+
+        if not df.empty:
+            st.dataframe(df, use_container_width=True, hide_index=True)
+        else:
+            st.warning("No hay tarifas registradas que coincidan.")
+
+    # --- TAB 2: AGREGAR/MODIFICAR ---
+    with tab2:
+        st.subheader("Registrar o Actualizar Destino")
+        with st.form("nueva_tarifa_form", clear_on_submit=True):
+            col1, col2 = st.columns(2)
+            with col1:
+                nueva_zona = st.text_input("Nombre de la Zona/Destino:", placeholder="Ej. Barquisimeto").strip()
+            with col2:
+                nuevo_monto = st.number_input("Monto aproximado ($):", min_value=0.0, step=5.0, format="%.2f")
+            
+            nuevas_observaciones = st.text_area("Notas adicionales:", placeholder="Tarifa base. Puede variar según volumen.")
+            boton_guardar = st.form_submit_button("Guardar Cambios")
+            
+            if boton_guardar:
+                if not nueva_zona:
+                    st.error("❌ El nombre de la zona no puede estar vacío.")
+                else:
+                    query_upsert = """
+                        INSERT INTO tarifas_tentativas (zona, monto_aproximado, observaciones, fecha_actualizacion)
+                        VALUES (%s, %s, %s, CURRENT_TIMESTAMP)
+                        ON CONFLICT (zona) 
+                        DO UPDATE SET 
+                            monto_aproximado = EXCLUDED.monto_aproximado,
+                            observaciones = EXCLUDED.observaciones,
+                            fecha_actualizacion = CURRENT_TIMESTAMP;
+                    """
+                    conn = None
+                    try:
+                        conn = obtener_conexion_db()
+                        with conn.cursor() as cur:
+                            cur.execute(query_upsert, (nueva_zona, nuevo_monto, nuevas_observaciones))
+                        conn.commit()
+                        st.success(f"✅ ¡Guardado! '{nueva_zona}' ahora está en ${nuevo_monto:.2f}.")
+                    except Exception as e:
+                        if conn is not None:
+                            conn.rollback()
+                        st.error(f"❌ Error al guardar: {e}")
+                    finally:
+                        if conn is not None:
+                            conn.close()
+# ==============================================================================================================
+# Función principal
+# ==============================================================================================================
+
 def mostrar_modulo_operaciones():
     st.markdown("### 🎯 Control Operativo de Rutas")
     st.write("Seguimiento en tiempo real de unidades, despachos, contingencias e historial consolidado.")
     
     # Pestañas de control operativo
-    tab_asignar, tab_despacho, tab_carretera, tab_contingencia, tab_historial = st.tabs([
+    tab_asignar, tab_despacho, tab_carretera, tab_contingencia, tab_historial, tab_gestion_tarifas = st.tabs([
         "📋 Solicitudes / Por Asignar",
         "📝 Registrar Despacho",
         "🚚 Unidades en Carretera", 
         "🔄 Modificar Viaje (Contingencias)",
         "📊 Historial y Auditoría"
+        " Gestión de Tarifas"
     ])
     
     # =========================================================================
@@ -879,3 +963,5 @@ def mostrar_modulo_operaciones():
                         
             except Exception as e:
                 st.error(f"Error al cargar el detalle del flete: {e}")
+    with tab_gestion_tarifas:
+        seccion_tarifas_admin()
