@@ -14,7 +14,6 @@ ruta_raiz = os.path.dirname(dir_este_archivo)
 if ruta_raiz not in sys.path:
     sys.path.insert(0, ruta_raiz)
 
-
 # =========================================================================
 # 🕵️‍♂️ VERIFICACIÓN DE CREDENCIALES CORPORATIVAS
 # =========================================================================
@@ -65,13 +64,6 @@ def mostrar_interfaz_cliente():
 
     # Guardamos el texto legal en las variables globales dinámicas por si lo requiere el sidebar
     globals()['texto_legal_choferes'] = texto_legal_choferes
-
-
-    
-
-
-
-
 
     # Crear una clave de formulario en el estado de la sesión si no existe
     if "formulario_token" not in st.session_state:
