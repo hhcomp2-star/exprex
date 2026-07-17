@@ -258,6 +258,7 @@ def renderizar_panel_conductor(cedula_conductor):
             
             with st.form("form_combustible_chofer", clear_on_submit=True):
                 # Usamos dt.date.today() que es el alias limpio que dejamos arriba
+                placa_vehiculo = st.text_input("Placa:")
                 fecha_gasto = st.date_input("📅 Fecha del Suministro:", value=dt.date.today())
                 litros = st.number_input("🧪 Litros Surtidos:", min_value=0.0, step=1.0)
                 monto_pagado = st.number_input("💵 Monto Total Pagado ($):", min_value=0.0, step=1.0)
@@ -276,9 +277,9 @@ def renderizar_panel_conductor(cedula_conductor):
                             with conexion.cursor() as cursor:
                                 # Reemplazamos los '?' por '%s' para la sintaxis de Postgres
                                 cursor.execute('''
-                                    INSERT INTO control_combustible (cedula, fecha, litros_comprados, costo_usd, estacion, observaciones)
-                                    VALUES (%s, %s, %s, %s, %s, %s)
-                                ''', (cedula_conductor, str(fecha_gasto), litros, monto_pagado, estacion_servicio, observaciones_comb))
+                                    INSERT INTO control_combustible (placa, cedula, fecha, litros_comprados, costo_usd, estacion_servicio, observaciones)
+                                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                                ''', (cedula_conductor, str(fecha_gasto), placa_vehiculo, litros, monto_pagado, estacion_servicio, observaciones_comb))
                             conexion.commit()
                         st.success("🎉 ¡Reporte de combustible guardado con éxito!")
                     except Exception as e:
