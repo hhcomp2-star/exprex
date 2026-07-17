@@ -26,15 +26,23 @@ from modulos.utils import obtener_conexion_db  # O como tengas tu importación a
 
 def seccion_tarifas_admin():
     st.header("⚙️ Gestión de Tarifas Tentativas")
-    st.write("Administra el listado de precios de fletes por zona geográfica.")
+    st.write("Administra las zonas, distancias y precios de fletes para tus clientes.")
 
-    tab1, tab2 = st.tabs(["🔎 Ver y Buscar Tarifas", "➕ Agregar / Modificar Tarifa"])
+    tab1, tab2 = st.tabs(["🔎 Ver y Buscar Tarifas", "➕ Agregar / Modificar Zona"])
 
     # --- TAB 1: BUSCADOR ---
     with tab1:
         busqueda = st.text_input("Buscar zona existente:", placeholder="Ej. Valencia...").strip()
-        query_base = 'SELECT zona AS "Zona", monto_aproximado AS "Precio ($)", observaciones AS "Observaciones", fecha_actualizacion AS "Última Actualización" FROM tarifas_tentativas'
-        #query_base = "SELECT zona AS 'Zona', monto_aproximado AS 'Precio ($)', observaciones AS 'Observaciones', fecha_actualizacion AS 'Última Actualización' FROM tarifas_tentativas"
+        
+        query_base = """
+            SELECT zona AS "Zona", 
+                   kilometros_estimados AS "Km Aprox.", 
+                   monto_normal AS "Normal ($)",
+                   monto_express AS "Express ($)",
+                   observaciones AS "Observaciones",
+                   fecha_actualizacion AS "Última Actualización"
+            FROM tarifas_tentativas
+        """
         
         conn = None
         df = pd.DataFrame()
@@ -53,21 +61,37 @@ def seccion_tarifas_admin():
                 conn.close()
 
         if not df.empty:
-            st.dataframe(df, use_container_width=True, hide_index=True)
+            st.dataframe(
+                df.style.format({
+                    "Km Aprox.": "{:.1f} Km",
+                    "Normal ($)": "${:.2f}",
+                    "Express ($)": "${:.2f}"
+                }),
+                use_container_width=True, 
+                hide_index=True
+            )
         else:
             st.warning("No hay tarifas registradas que coincidan.")
 
     # --- TAB 2: AGREGAR/MODIFICAR ---
     with tab2:
-        st.subheader("Registrar o Actualizar Destino")
+        st.subheader("Registrar o Actualizar Distancia y Tarifas")
         with st.form("nueva_tarifa_form", clear_on_submit=True):
-            col1, col2 = st.columns(2)
-            with col1:
-                nueva_zona = st.text_input("Nombre de la Zona/Destino:", placeholder="Ej. Barquisimeto").strip()
-            with col2:
-                nuevo_monto = st.number_input("Monto aproximado ($):", min_value=0.0, step=5.0, format="%.2f")
+            nueva_zona = st.text_input("Nombre de la Zona/Destino:", placeholder="Ej. Barquisimeto").strip()
             
-            nuevas_observaciones = st.text_area("Notas adicionales:", placeholder="Tarifa base. Puede variar según volumen.")
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                nuevos_km = st.number_input("Distancia (Km):", min_value=0.1, step=1.0, format="%.1f")
+            with col2:
+                # Sugerimos por defecto Km * 2.5 pero permitimos editar
+                val_normal = nuevos_km * 2.5
+                monto_n = st.number_input("Precio Normal ($):", min_value=0.0, value=val_normal, step=1.0, format="%.2f")
+            with col3:
+                # Sugerimos por defecto Km * 4.0 pero permitimos editar
+                val_express = nuevos_km * 4.0
+                monto_e = st.number_input("Precio Express ($):", min_value=0.0, value=val_express, step=1.0, format="%.2f")
+            
+            nuevas_observaciones = st.text_area("Notas adicionales:", placeholder="Tarifa base. Válida para camiones de capacidad estándar.")
             boton_guardar = st.form_submit_button("Guardar Cambios")
             
             if boton_guardar:
@@ -75,11 +99,13 @@ def seccion_tarifas_admin():
                     st.error("❌ El nombre de la zona no puede estar vacío.")
                 else:
                     query_upsert = """
-                        INSERT INTO tarifas_tentativas (zona, monto_aproximado, observaciones, fecha_actualizacion)
-                        VALUES (%s, %s, %s, CURRENT_TIMESTAMP)
+                        INSERT INTO tarifas_tentativas (zona, kilometros_estimados, monto_normal, monto_express, observaciones, fecha_actualizacion)
+                        VALUES (%s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
                         ON CONFLICT (zona) 
                         DO UPDATE SET 
-                            monto_aproximado = EXCLUDED.monto_aproximado,
+                            kilometros_estimados = EXCLUDED.kilometros_estimados,
+                            monto_normal = EXCLUDED.monto_normal,
+                            monto_express = EXCLUDED.monto_express,
                             observaciones = EXCLUDED.observaciones,
                             fecha_actualizacion = CURRENT_TIMESTAMP;
                     """
@@ -87,16 +113,17 @@ def seccion_tarifas_admin():
                     try:
                         conn = obtener_conexion_db()
                         with conn.cursor() as cur:
-                            cur.execute(query_upsert, (nueva_zona, nuevo_monto, nuevas_observaciones))
+                            cur.execute(query_upsert, (nueva_zona, nuevos_km, monto_n, monto_e, nuevas_observaciones))
                         conn.commit()
-                        st.success(f"✅ ¡Guardado! '{nueva_zona}' ahora está en ${nuevo_monto:.2f}.")
+                        st.success(f"✅ ¡Excelente! Zona '{nueva_zona}' guardada: Normal ${monto_n:.2f} | Express ${monto_e:.2f}.")
                     except Exception as e:
                         if conn is not None:
                             conn.rollback()
-                        st.error(f"❌ Error al guardar: {e}")
+                        st.error(f"❌ Error al guardar en la base de datos: {e}")
                     finally:
                         if conn is not None:
                             conn.close()
+
 # ==============================================================================================================
 # Función principal
 # ==============================================================================================================

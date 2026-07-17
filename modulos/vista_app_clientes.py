@@ -46,8 +46,8 @@ def verificar_cliente_b2b(rif: str, contrasena: str):
         return None
 
 def seccion_tarifas_clientes():
-    st.header("📋 Precios Tentativos de Traslado")
-    st.write("Consulta el costo aproximado de tu flete según la zona geográfica de destino.")
+    st.header("📋 Tarifas Estimadas de Traslado")
+    st.write("Consulta el costo aproximado de tu traslado en nuestras dos modalidades de servicio.")
 
     zona_buscada = st.text_input(
         "Escribe el nombre de la zona o ciudad a donde vas:", 
@@ -55,38 +55,45 @@ def seccion_tarifas_clientes():
     ).strip()
 
     if zona_buscada:
-        # Buscamos coincidencias aproximadas
         query_busqueda = """
             SELECT zona AS "Zona / Destino", 
-                   monto_aproximado AS "Monto Aprox. ($)", 
+                   kilometros_estimados AS "Distancia Aprox.",
+                   monto_normal AS "Tarifa Normal ($)",
+                   monto_express AS "Tarifa Express ($)",
                    observaciones AS "Detalles"
             FROM tarifas_tentativas
             WHERE zona ILIKE %s
             ORDER BY zona ASC
         """
+        
         conn = None
+        df_resultados = pd.DataFrame()
         try:
-            # 1. Obtenemos la conexión llamando a tu función (sin argumentos)
             conn = obtener_conexion_db()
-            
-            # 2. Leemos la consulta directamente a un DataFrame de Pandas
             df_resultados = pd.read_sql(query_busqueda, conn, params=(f"%{zona_buscada}%",))
-            
         except Exception as e:
             st.error(f"❌ Error al consultar la base de datos: {e}")
-            df_resultados = pd.DataFrame() # Creamos un DataFrame vacío en caso de fallo
-            
         finally:
-            # 3. Nos aseguramos de cerrar la conexión si logró abrirse
             if conn is not None:
                 conn.close()
 
-        # Renderizado de los resultados...
         if not df_resultados.empty:
             st.success(f"Se encontraron {len(df_resultados)} coincidencias:")
-            st.dataframe(df_resultados, use_container_width=True, hide_index=True)
+            
+            # Formateamos la tabla para mostrar kilómetros y montos con su símbolo
+            st.dataframe(
+                df_resultados.style.format({
+                    "Distancia Aprox.": "{:.1f} Km",
+                    "Tarifa Normal ($)": "${:.2f}",
+                    "Tarifa Express ($)": "${:.2f}"
+                }),
+                use_container_width=True, 
+                hide_index=True
+            )
         else:
             st.warning("⚠️ No se encontró una tarifa registrada para esa zona. Por favor, solicita una cotización personalizada con nosotros.")
+    else:
+        st.info("Escribe tu destino arriba para conocer las tarifas Normal y Express al instante.")
 
 # =========================================================================
 # 🏢 PANEL PRINCIPAL DEL CLIENTE (MÓDULO INDEPENDIENTE)
