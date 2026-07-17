@@ -276,7 +276,7 @@ def renderizar_panel_conductor(cedula_conductor):
                             with conexion.cursor() as cursor:
                                 # Reemplazamos los '?' por '%s' para la sintaxis de Postgres
                                 cursor.execute('''
-                                    INSERT INTO control_combustible (cedula_conductor, fecha, litros, monto_usd, estacion, observaciones)
+                                    INSERT INTO control_combustible (cedula, fecha, litros, monto_usd, estacion, observaciones)
                                     VALUES (%s, %s, %s, %s, %s, %s)
                                 ''', (cedula_conductor, str(fecha_gasto), litros, monto_pagado, estacion_servicio, observaciones_comb))
                             conexion.commit()
@@ -385,25 +385,7 @@ def renderizar_panel_conductor(cedula_conductor):
                 """,
                 unsafe_allow_html=True
             )
-
-            # Sumamos los pagos asegurándonos de tratar los nulos como 0.0
-            #monto_acumulado = pd.to_numeric(df_historial['pago_chofer_usd'], errors='coerce').fillna(0.0).sum()
-            
-            # Usamos columnas adaptadas para que queden alineadas y compactas en el celular
-            #col_met1, col_met2 = st.columns(2, gap="small")
-            
-            #with col_met1:
-            #    st.metric(
-            #        label="Viajes Realizados", 
-            #        value=f"{total_viajes}"
-            #    )
-                
-            #with col_met2:
-            #    st.metric(
-            #        label="Monto Acumulado", 
-            #        value=f"${monto_acumulado:,.2f}"
-            #    )
-            
+        
             st.write("---")  # Línea sutil divisoria
 
             # ======================================================================================================
