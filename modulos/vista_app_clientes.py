@@ -7,32 +7,13 @@ import pandas as pd
 import streamlit.components.v1 as components
 #from modulos.version_app import mostrar_version_de_la_app
 
-# Obtenemos la ruta del directorio donde reside ESTE archivo actual
+# Obtenemos la ruta del directorio donde reside ESTE archivo actual de forma limpia
 dir_este_archivo = os.path.dirname(os.path.abspath(__file__))
-
-# Definimos la ruta raíz (un nivel arriba, ya que estamos dentro de 'modulos')
 ruta_raiz = os.path.dirname(dir_este_archivo)
 
 if ruta_raiz not in sys.path:
     sys.path.insert(0, ruta_raiz)
 
-# Importamos la función de conexión a PostgreSQL
-from modulos.utils import obtener_conexion_db
-
-# --- CARGAR TEXTO LEGAL DE FORMA ABSOLUTA ---
-# Como 'terminos.txt' está en la misma carpeta 'modulos' que este script:
-ruta_terminos = os.path.join(dir_este_archivo, "terminos.txt")
-
-# En caso de que 'terminos.txt' esté en la raíz en lugar de dentro de 'modulos', 
-# usamos este respaldo automático:
-if not os.path.exists(ruta_terminos):
-    ruta_terminos = os.path.join(ruta_raiz, "terminos.txt")
-
-try:
-    with open(ruta_terminos, "r", encoding="utf-8") as f:
-        texto_legal_choferes = f.read()
-except Exception as e:
-    texto_legal_choferes = f"⚠️ No se pudo encontrar ni cargar el archivo de términos en `{ruta_terminos}`: {e}"
 
 # =========================================================================
 # 🕵️‍♂️ VERIFICACIÓN DE CREDENCIALES CORPORATIVAS
@@ -42,7 +23,9 @@ def verificar_cliente_b2b(rif: str, contrasena: str):
     Busca en la tabla clientes si coinciden de forma exacta el RIF y la contraseña.
     Retorna los datos esenciales si tiene éxito, o None si fallan las credenciales.
     """
-    # Tipamos los parámetros para evitar alertas de Pylance
+    # Importación local para evitar colisiones circulares al arrancar main.py
+    from modulos.utils import obtener_conexion_db
+
     rif_limpio = rif.strip().upper()
     pass_limpia = contrasena.strip()
     
@@ -53,20 +36,35 @@ def verificar_cliente_b2b(rif: str, contrasena: str):
     """
     
     try:
-        # Usamos el bloque 'with' seguro para manejar la conexión y el cursor de Postgres
         with obtener_conexion_db() as conexion:
             with conexion.cursor() as cursor:
                 cursor.execute(query, (rif_limpio, pass_limpia))
                 resultado = cursor.fetchone()
-                return resultado  # Retorna la tupla (id_cliente, rif, razon_social) o None
+                return resultado  
     except Exception as e:
         st.error(f"❌ Error al conectar con la base de datos PostgreSQL: {e}")
         return None
-#    
+
 # =========================================================================
 # 🏢 PANEL PRINCIPAL DEL CLIENTE (MÓDULO INDEPENDIENTE)
 # =========================================================================
 def mostrar_interfaz_cliente():
+    # Importación local segura dentro de la función de ejecución de la interfaz
+    from modulos.utils import obtener_conexion_db
+
+    # --- CARGAR TEXTO LEGAL DE FORMA ABSOLUTA DENTRO DEL PANEL ---
+    ruta_terminos = os.path.join(dir_este_archivo, "terminos.txt")
+    if not os.path.exists(ruta_terminos):
+        ruta_terminos = os.path.join(ruta_raiz, "terminos.txt")
+
+    try:
+        with open(ruta_terminos, "r", encoding="utf-8") as f:
+            texto_legal_choferes = f.read()
+    except Exception as e:
+        texto_legal_choferes = f"⚠️ No se pudo encontrar ni cargar el archivo de términos en `{ruta_terminos}`: {e}"
+
+    # Guardamos el texto legal en las variables globales dinámicas por si lo requiere el sidebar
+    globals()['texto_legal_choferes'] = texto_legal_choferes
 
     # Crear una clave de formulario en el estado de la sesión si no existe
     if "formulario_token" not in st.session_state:
@@ -92,7 +90,7 @@ def mostrar_interfaz_cliente():
 
     # Recuperamos los datos del cliente que guardamos en el session_state al loguearse
     id_cliente = st.session_state.get("cliente_id")
-    rif_cliente = st.session_state.get("usuario_cedula") # Reutilizamos la variable de sesión para el RIF
+    rif_cliente = st.session_state.get("usuario_cedula") 
     razon_social = st.session_state.get("usuario_nombre")
     
     # Valores por defecto iniciales por seguridad de tipado
@@ -122,9 +120,7 @@ def mostrar_interfaz_cliente():
                 else:
                     credito_disponible = limite_credito - saldo_pendiente
     except Exception as e:
-        # Caída segura en caso de un fallo de red o base de datos
         credito_disponible = limite_credito - saldo_pendiente
-
 
     # -------------------------------------------------------------------------
     # ENCABEZADO Y MÉTRICAS FINANCIERAS
@@ -134,7 +130,6 @@ def mostrar_interfaz_cliente():
     st.caption(f"RIF: {rif_cliente} | Gestión de Logística y Cuentas por Cobrar ExpreX")
     st.markdown("---")
     
-    # 🎨 Bloque de CSS para ajustar quirúrgicamente el tamaño de los métricos
     st.markdown(
         """
         <style>
@@ -151,7 +146,6 @@ def mostrar_interfaz_cliente():
         unsafe_allow_html=True
     )
 
-    # Tarjetas visuales con el estado de su crédito
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.metric(label="💰 Límite de Crédito", value=f"${limite_credito:,.2f}")
@@ -163,6 +157,7 @@ def mostrar_interfaz_cliente():
         st.metric(label="📅 Términos de Pago", value=f"{dias_credito} días de crédito")
     
     st.markdown("---")
+
     #
     # -------------------------------------------------------------------------
     # PESTAÑAS DE TRABAJO
