@@ -560,10 +560,10 @@ def mostrar_interfaz_cliente():
         # 🔄 BOTÓN DE RETORNO AL MENÚ PRINCIPAL
         st.write("---")
 
-        st.info("Para ir a la pantalla inicial haga clic en la pestaña Solicitar Nuevo Flete")
-        #if st.button("🏠 Volver al Menú Principal", key="btn_home_hist_cli", use_container_width=True):
-        #    st.session_state["cliente_pagina"] = "Menu Principal"
-        st.rerun()
+        #st.info("Para ir a la pantalla inicial haga clic en la pestaña Solicitar Nuevo Flete")
+        if st.button("🏠 Volver al Menú Principal", key="btn_home_hist_cli", use_container_width=True):
+            st.session_state["cliente_pagina"] = "Menu Principal"
+            st.rerun()
     #
     # =========================================================================
     # PESTAÑA: CONSULTOR INDIVIDUAL DE DESPACHOS (PARA CLIENTES)
