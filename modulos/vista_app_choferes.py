@@ -452,10 +452,11 @@ def renderizar_panel_conductor(cedula_conductor):
                                 WHERE id_viaje = %s
                             ''', (id_historial_sel,))
                             v_det = cursor.fetchone()
-                    
+                    #
                     if v_det:
-                        #ruta_foto = fila_viaje['foto_evidencia'] # O como recuperes el campo de la consulta
-                        ruta_foto = v_det[9] if v_det[9] is not None else st.info("No existe foto evidencia del viaje") # O como recuperes el campo de la consulta
+                        # Corregido: Si es None, le asignamos None directamente sin llamar a Streamlit aquí
+                        ruta_foto = v_det[9] 
+                        
                         pago_flotante = float(v_det[8]) if v_det[8] is not None else 0.0
                         st.info(f"""
                         **Detalle del Flete N° {id_historial_sel}**
@@ -468,8 +469,11 @@ def renderizar_panel_conductor(cedula_conductor):
                         * **Pago al Chofer (USD):** ${pago_flotante:.2f}
                         """)
 
-                        st.caption("Foto evidencia: Factura")
+                        # Solo mostramos este subtítulo si realmente hay un registro de ruta
+                        if ruta_foto:
+                            st.caption("📸 Foto Evidencia Adjunta")
                         
+                        # Invocamos la función pasando el texto limpio o None
                         mostrar_evidencia_entrega(ruta_foto)
 
                 except Exception as e:
