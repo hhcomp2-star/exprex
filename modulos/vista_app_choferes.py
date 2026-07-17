@@ -433,7 +433,7 @@ def renderizar_panel_conductor(cedula_conductor):
                     
                     if v_det:
                         #ruta_foto = fila_viaje['foto_evidencia'] # O como recuperes el campo de la consulta
-                        ruta_foto = v_det[10] if v_det[10] else st.info("No existe foto evidencia del viaje") # O como recuperes el campo de la consulta
+                        ruta_foto = v_det[9] if v_det[9] is not None else st.info("No existe foto evidencia del viaje") # O como recuperes el campo de la consulta
                         pago_flotante = float(v_det[8]) if v_det[8] is not None else 0.0
                         st.info(f"""
                         **Detalle del Flete N° {id_historial_sel}**
