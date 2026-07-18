@@ -1,6 +1,7 @@
 import streamlit as st
 import os
 import time
+import pandas as pd
 from streamlit_option_menu import option_menu
 from modulos.nomina import mostrar_modulo_nomina
 from modulos.clientes import mostrar_modulo_clientes
@@ -85,7 +86,7 @@ def mostrar_panel_administrador():
         st.write("Bienvenido al sistema de gestión de transporte de materiales livianos.")
         
         # Validación de la ruta de la imagen
-        ruta_logo = "modulos/logo_exprex_7.png"
+        ruta_logo = "modulos/logo_exprex_10.png"
         
         if os.path.exists(ruta_logo):
             col_izq, col_centro, col_der = st.columns([1, 1, 1])
