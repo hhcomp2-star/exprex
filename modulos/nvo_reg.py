@@ -1,5 +1,6 @@
 import streamlit as st  # Usando tu alias estándar
 import pandas as pd
+import os
 import time
 from modulos.utils import obtener_conexion_db
 
@@ -59,9 +60,9 @@ def mostrar_modulo_registro():
 
             try:
                 with open(ruta_terminos, "r", encoding="utf-8") as f:
-                    texto_legal_choferes = f.read()
+                    texto_legal = f.read()
             except Exception as e:
-                texto_legal_choferes = f"⚠️ No se pudo cargar el archivo de términos en `{ruta_terminos}`: {e}"
+                texto_legal = f"⚠️ No se pudo cargar el archivo de términos en `{ruta_terminos}`: {e}"
 
 
 
