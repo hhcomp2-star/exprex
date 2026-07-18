@@ -216,8 +216,8 @@ if not st.session_state.autenticado:
                     usuario = verificar_usuario(campo_cedula, campo_clave)
                     
                     # --- LÓGICA DE INICIAR SESIÓN ---
-                    if boton_entrar or enter_pulsado:  # Ajusta según tus variables
-                        if usuario and contrasena:
+                    if boton_entrar:  # Ajusta según tus variables
+                        if campo_cedula and campo_clave:
                             
                             # 1. Creamos un contenedor temporal para el mensaje y la barra
                             con_progreso = st.container()
