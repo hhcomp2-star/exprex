@@ -285,6 +285,7 @@ if not st.session_state.autenticado:
                                 guardar_sesion_local(rif_clie, razon_social_clie, "Cliente", id_clie)
 
                             st.success(f"¡Bienvenido al Panel Corporativo, {razon_social_clie}!")
+                            espere(campo_cedula, campo_clave)
                             time.sleep(1)
                             st.rerun()
                         else:
