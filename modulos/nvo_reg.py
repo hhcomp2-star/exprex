@@ -55,12 +55,23 @@ def mostrar_modulo_registro():
 
             st.markdown("---")
             
-            # Intentamos leer el archivo de texto externo con los términos largos
+            ruta_terminos = os.path.join("modulos", "terminos.txt")
+
             try:
-                with open("terminos.txt", "r", encoding="utf-8") as archivo:
-                    texto_legal = archivo.read()
-            except FileNotFoundError:
-                texto_legal = "⚠️ **Error:** El archivo 'terminos.txt' no se encuentra en el servidor. Por favor, contacte al Administrador."
+                with open(ruta_terminos, "r", encoding="utf-8") as f:
+                    texto_legal_choferes = f.read()
+            except Exception as e:
+                texto_legal_choferes = f"⚠️ No se pudo cargar el archivo de términos en `{ruta_terminos}`: {e}"
+
+
+
+
+            # Intentamos leer el archivo de texto externo con los términos largos
+            #try:
+            #    with open("terminos.txt", "r", encoding="utf-8") as archivo:
+            #        texto_legal = archivo.read()
+            #except FileNotFoundError:
+            #    texto_legal = "⚠️ **Error:** El archivo 'terminos.txt' no se encuentra en el servidor. Por favor, contacte al Administrador."
 
             # El expander que el usuario abre si desea leer todo el documento
             with st.expander("📋 Leer Términos, Condiciones y Política de Privacidad de ExpreX"):
