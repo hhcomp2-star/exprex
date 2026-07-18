@@ -57,7 +57,7 @@ def mostrar_modulo_registro():
             
             # Intentamos leer el archivo de texto externo con los términos largos
             try:
-                with open("/modulos/terminos.txt", "r", encoding="utf-8") as archivo:
+                with open("terminos.txt", "r", encoding="utf-8") as archivo:
                     texto_legal = archivo.read()
             except FileNotFoundError:
                 texto_legal = "⚠️ **Error:** El archivo 'terminos.txt' no se encuentra en el servidor. Por favor, contacte al Administrador."
