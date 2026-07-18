@@ -69,6 +69,40 @@ if "vista_login" not in st.session_state:
 # Pequeño puente JS/HTML inyectado de forma segura en Streamlit para simular localstorage
 from streamlit.components.v1 import html
 
+# --- LÓGICA DE INICIAR SESIÓN ---
+def espere(campo_cedula, campo_clave)
+    if boton_entrar:  # Ajusta según tus variables
+        if campo_cedula and campo_clave:
+            
+            # 1. Creamos un contenedor temporal para el mensaje y la barra
+            con_progreso = st.container()
+            
+            with con_progreso:
+                st.info("🔄 Espere. . .")
+                # Inicializamos la barra de progreso en 0%
+                barra_espera = st.progress(0)
+                
+                # Simulamos el avance sutil mientras la base de datos responde
+                # (Divide los 2 o 3 segundos en pequeños pasos visuales)
+                import time
+                for porcentaje in range(0, 101, 10):
+                    time.sleep(0.1) # Brevísimo retraso visual para que la barra se mueva
+                    barra_espera.progress(porcentaje)
+            
+            # 2. Aquí ejecutas tu lógica real de conexión a la base de datos
+            try:
+                # Tu función existente para validar credenciales:
+                # usuario_valido = verificar_credenciales(usuario, contrasena)
+                pass
+                
+            except Exception as e:
+                st.error(f"Error de conexión: {e}")
+                
+            finally:
+                # 3. Al terminar todo el proceso, limpiamos la barra para que no se quede fija en pantalla
+                con_progreso.empty()
+
+
 def guardar_sesion_local(cedula, nombre, rol, cliente_id=None):
     """Guarda las credenciales de forma persistente en el dispositivo del chofer/usuario"""
     id_cli_str = str(cliente_id) if cliente_id else "null"
@@ -215,37 +249,7 @@ if not st.session_state.autenticado:
                 else:
                     usuario = verificar_usuario(campo_cedula, campo_clave)
                     
-                    # --- LÓGICA DE INICIAR SESIÓN ---
-                    if boton_entrar:  # Ajusta según tus variables
-                        if campo_cedula and campo_clave:
-                            
-                            # 1. Creamos un contenedor temporal para el mensaje y la barra
-                            con_progreso = st.container()
-                            
-                            with con_progreso:
-                                st.info("🔄 Espere. . .")
-                                # Inicializamos la barra de progreso en 0%
-                                barra_espera = st.progress(0)
-                                
-                                # Simulamos el avance sutil mientras la base de datos responde
-                                # (Divide los 2 o 3 segundos en pequeños pasos visuales)
-                                import time
-                                for porcentaje in range(0, 101, 10):
-                                    time.sleep(0.1) # Brevísimo retraso visual para que la barra se mueva
-                                    barra_espera.progress(porcentaje)
-                            
-                            # 2. Aquí ejecutas tu lógica real de conexión a la base de datos
-                            try:
-                                # Tu función existente para validar credenciales:
-                                # usuario_valido = verificar_credenciales(usuario, contrasena)
-                                pass
-                                
-                            except Exception as e:
-                                st.error(f"Error de conexión: {e}")
-                                
-                            finally:
-                                # 3. Al terminar todo el proceso, limpiamos la barra para que no se quede fija en pantalla
-                                con_progreso.empty()
+                    #
 
                     if usuario:
                         st.session_state.autenticado = True
@@ -257,6 +261,7 @@ if not st.session_state.autenticado:
                             guardar_sesion_local(usuario[0], usuario[1], usuario[2])
 
                         st.success(f"¡Bienvenido, {usuario[1]}!")
+                        espere(campo_cedula, campo_clave)
                         time.sleep(1)
                         st.rerun()
                         
