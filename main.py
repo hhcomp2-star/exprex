@@ -70,7 +70,7 @@ if "vista_login" not in st.session_state:
 from streamlit.components.v1 import html
 
 # --- LÓGICA DE INICIAR SESIÓN ---
-def espere(campo_cedula, campo_clave)
+def espere(campo_cedula, campo_clave):
     if boton_entrar:  # Ajusta según tus variables
         if campo_cedula and campo_clave:
             
