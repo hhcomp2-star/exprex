@@ -176,7 +176,7 @@ if not st.session_state.autenticado:
     
     if st.session_state["vista_login"] == "recuperar_contrasena":
         mostrar_encabezado_exprex_chofer()
-        st.markdown("## 🚛 ExpreX Logística")
+        #st.markdown("## 🚛 ExpreX Logística")
         mostrar_modulo_recuperar_contrasena() 
         st.markdown("---")
         if st.button("⬅️ Volver al Inicio de Sesión", use_container_width=True):
@@ -185,7 +185,7 @@ if not st.session_state.autenticado:
 
     elif st.session_state["vista_login"] == "registro_nuevo":
         mostrar_encabezado_exprex_chofer()
-        st.markdown("## 🚛 ExpreX Logística")
+        #st.markdown("## 🚛 ExpreX Logística")
         mostrar_modulo_registro()
         st.markdown("---")
         if st.button("⬅️ Volver al Inicio de Sesión", use_container_width=True):
@@ -233,7 +233,7 @@ if not st.session_state.autenticado:
             st.rerun()
 
     else:
-        mostrar_encabezado_exprex()
+        mostrar_encabezado_exprex_chofer()
         #st.markdown("### 🚛 ExpreX Logística")
         st.write("#### Iniciar Sesión")
 

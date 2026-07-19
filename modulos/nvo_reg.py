@@ -11,7 +11,7 @@ def mostrar_modulo_registro():
     if "usuario_registrado_nombre" not in st.session_state:
         st.session_state.usuario_registrado_nombre = ""
 
-    st.write("## 📝 Registro de Nuevo Conductor")
+    st.write("##### 📝 Registro de Nuevo Conductor")
     st.caption("Introduce tus datos básicos para darte de alta en la plataforma de ExpreX Logística.")
 
     # =========================================================================
@@ -64,17 +64,6 @@ def mostrar_modulo_registro():
             except Exception as e:
                 texto_legal = f"⚠️ No se pudo cargar el archivo de términos en `{ruta_terminos}`: {e}"
 
-
-
-
-            # Intentamos leer el archivo de texto externo con los términos largos
-            #try:
-            #    with open("terminos.txt", "r", encoding="utf-8") as archivo:
-            #        texto_legal = archivo.read()
-            #except FileNotFoundError:
-            #    texto_legal = "⚠️ **Error:** El archivo 'terminos.txt' no se encuentra en el servidor. Por favor, contacte al Administrador."
-
-            # El expander que el usuario abre si desea leer todo el documento
             with st.expander("📋 Leer Términos, Condiciones y Política de Privacidad de ExpreX"):
                 st.markdown(texto_legal)
 

@@ -13,7 +13,7 @@ def mostrar_modulo_recuperar_contrasena():
     if "cedula_a_recuperar" not in db_st.session_state:
         db_st.session_state["cedula_a_recuperar"] = None
 
-    db_st.write("## 🔑 Recuperación de Contraseña Olvidada")
+    db_st.write("##### 🔑 Recuperación de Contraseña Olvidada")
     db_st.caption("Por favor, sigue los pasos para validar tu identidad y restablecer el acceso al sistema.")
 
     # =========================================================================
