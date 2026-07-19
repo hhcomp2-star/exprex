@@ -36,7 +36,7 @@ def mostrar_encabezado_exprex_chofer():
     st.markdown(
     """
     <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
-        <img src="https://raw.githubusercontent.com/hhcomp2-star/exprex/main/exprex/modulos/logo_exprex_9.png" style="width: 55px; height: auto; border-radius: 8px;">
+        <img src="https://raw.githubusercontent.com/hhcomp2-star/exprex/main/exprex/favicon.ico" style="width: 55px; height: auto; border-radius: 8px;">
         <h1 style="margin: 0; padding: 0; font-size: 28px; line-height: 1.1; white-space: nowrap;">ExpreX Logística</h1>
     </div>
     <hr style="margin-top: 5px; margin-bottom: 20px; border: 0; border-top: 1px solid #333;">
