@@ -40,7 +40,7 @@ def mostrar_encabezado_exprex_chofer():
     ruta_logo = "favicon.ico"
 
     # Creamos dos columnas: una pequeña para el logo y una grande para el texto
-    col_logo, col_titulo = st.columns([0.4,0.6], vertical_alignment="center",width="stretch")
+    col_logo, col_titulo = st.columns([0.3,0.7], vertical_alignment="center", width="stretch")
 
     with col_logo:
         if os.path.exists(ruta_logo):
