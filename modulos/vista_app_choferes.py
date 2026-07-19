@@ -50,7 +50,7 @@ def verificar_vehiculo_propio(cedula_chofer):
 
 def renderizar_panel_conductor(cedula_conductor):
     mostrar_encabezado_exprex_chofer()
-    st.write(f"##### Panel de Operaciones - Conductor")
+    st.write(f"###### Panel de Operaciones - Conductor")
     
     # Colocar aquí para la barra lateral del Chofer (se despliega de lado en el tlf)
     tasa = st.session_state.get('tasa_bcv', '0.00')

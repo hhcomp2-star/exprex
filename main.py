@@ -235,7 +235,7 @@ if not st.session_state.autenticado:
     else:
         mostrar_encabezado_exprex_chofer()
         #st.markdown("### 🚛 ExpreX Logística")
-        st.write("#### Iniciar Sesión")
+        st.write("##### Iniciar Sesión")
 
         with st.form("formulario_login"):
             campo_cedula = st.text_input("Cédula de Identidad o RIF Empresa:").strip()
@@ -312,11 +312,11 @@ else:
     # ---------------------------------------------------
     # VISTA PRINCIPAL (PANTALLA LIMPIA POST-LOGIN)
     # ---------------------------------------------------
-    mostrar_encabezado_exprex()
+    #mostrar_encabezado_exprex()
     #st.write(f"### 🚛 ExpreX Logística")
     st.markdown("---")
     st.info(f"**Usuario:** {st.session_state.usuario_nombre} -  **Rol:** {st.session_state.usuario_rol}")
-
+    
     # Sincronización de tasa BCV (Cada 30 min)
     tiempo_actual = time.time()
     if 'tasa_bcv' not in st.session_state or (tiempo_actual - st.session_state.ultima_sincronizacion) > 1800:
