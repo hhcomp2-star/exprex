@@ -33,24 +33,34 @@ def mostrar_encabezado_exprex():
 
 
 def mostrar_encabezado_exprex_chofer():
+    st.markdown(
     """
-    Renderiza el logo de ExpreX y el título de la aplicación 
-    alineados horizontalmente de forma idéntica en cualquier pantalla.
-    """
-    ruta_logo = "favicon.ico"
+    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+        <img src="https://raw.githubusercontent.com/hhcomp2-star/exprex/main/exprex/modulos/logo_exprex_9.png" style="width: 55px; height: auto; border-radius: 8px;">
+        <h1 style="margin: 0; padding: 0; font-size: 28px; line-height: 1.1; white-space: nowrap;">ExpreX Logística</h1>
+    </div>
+    <hr style="margin-top: 5px; margin-bottom: 20px; border: 0; border-top: 1px solid #333;">
+    """,
+    unsafe_allow_html=True
+)
+    #"""
+    #Renderiza el logo de ExpreX y el título de la aplicación 
+    #alineados horizontalmente de forma idéntica en cualquier pantalla.
+    #"""
+    #ruta_logo = "favicon.ico"
 
     # Creamos dos columnas: una pequeña para el logo y una grande para el texto
-    col_logo, col_titulo = st.columns([0.2, 0.8], vertical_alignment="center", width="stretch")
+    #col_logo, col_titulo = st.columns([0.2, 0.8], vertical_alignment="center", width="stretch")
 
-    with col_logo:
-        if os.path.exists(ruta_logo):
-            # Un ancho de 60px para que actúe como un icono nítido
-            st.image(ruta_logo, width=60)
-        else:
+    #with col_logo:
+    #    if os.path.exists(ruta_logo):
+    #        # Un ancho de 60px para que actúe como un icono nítido
+    #        st.image(ruta_logo, width=60)
+    #    else:
             # Colocamos un espacio vacío o un emoji de respaldo si el archivo no existe
-            st.write("🚛")
+    #        st.write("🚛")
 
-    with col_titulo:
+    #with col_titulo:
         # Colocamos un pequeño margen superior en HTML para alinear verticalmente el texto con el logo
         #st.markdown(
-        st.markdown("<h4 style='margin:0; padding:0; line-height:1.1;'>ExpreX Logística</h4>", unsafe_allow_html=True)
+    #    st.markdown("<h4 style='margin:0; padding:0; line-height:1.1;'>ExpreX Logística</h4>", unsafe_allow_html=True)
