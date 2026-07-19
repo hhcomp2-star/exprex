@@ -20,7 +20,7 @@ for ruta in [ruta_raiz, ruta_modulos]:
 # Ahora las importaciones se ejecutarán con total normalidad en tu PC y en la nube
 from modulos.rec_cont import mostrar_modulo_recuperar_contrasena
 from modulos.nvo_reg import mostrar_modulo_registro
-from modulos.componentes import mostrar_encabezado_exprex
+from modulos.componentes import mostrar_encabezado_exprex, mostrar_encabezado_exprex_chofer
 from modulos.version_app import mostrar_version_de_la_app
 from streamlit.components.v1 import html
 
@@ -175,7 +175,7 @@ def verificar_usuario(cedula, contrasena):
 if not st.session_state.autenticado:
     
     if st.session_state["vista_login"] == "recuperar_contrasena":
-        mostrar_encabezado_exprex()
+        mostrar_encabezado_exprex_chofer()
         st.markdown("## 🚛 ExpreX Logística")
         mostrar_modulo_recuperar_contrasena() 
         st.markdown("---")
@@ -184,7 +184,7 @@ if not st.session_state.autenticado:
             st.rerun()
 
     elif st.session_state["vista_login"] == "registro_nuevo":
-        mostrar_encabezado_exprex()
+        mostrar_encabezado_exprex_chofer()
         st.markdown("## 🚛 ExpreX Logística")
         mostrar_modulo_registro()
         st.markdown("---")
@@ -193,7 +193,7 @@ if not st.session_state.autenticado:
             st.rerun()
 
     elif st.session_state["vista_login"] == "soporte_contacto":
-        mostrar_encabezado_exprex()
+        mostrar_encabezado_exprex_chofer()
         #st.markdown("## 🚛 ExpreX Logística")
         st.write("#### 🎧 Soporte Técnico ExpreX")
 

@@ -1,6 +1,7 @@
 # componentes.py
 import streamlit as st
 import os
+from streamlit.components.v1 import html
 
 def mostrar_encabezado_exprex():
     """
