@@ -17,6 +17,7 @@ from modulos.utils import obtener_conexion_db, contar_viajes_por_salir, reproduc
 from modulos.version_app import mostrar_version_de_la_app
 from modulos.soporte import llamar_soporte
 from utils import mostrar_evidencia_entrega
+from .componentes import mostrar_encabezado_exprex_chofer
 
 ruta_terminos = os.path.join("modulos", "terminos.txt")
 
@@ -48,7 +49,7 @@ def verificar_vehiculo_propio(cedula_chofer):
     return False
 
 def renderizar_panel_conductor(cedula_conductor):
-    
+    mostrar_encabezado_exprex_chofer()
     st.write(f"##### Panel de Operaciones - Conductor")
     
     # Colocar aquí para la barra lateral del Chofer (se despliega de lado en el tlf)
