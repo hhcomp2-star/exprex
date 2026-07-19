@@ -25,7 +25,7 @@ from modulos.version_app import mostrar_version_de_la_app
 from streamlit.components.v1 import html
 
 # Configuración de la página
-st.set_page_config(page_title="ExpreX Logística", page_icon="exprex_logo_8.png", layout="centered")
+st.set_page_config(page_title="ExpreX Logística", page_icon="favicon.ico", layout="centered")
 
 def obtener_conexion_db():
     """Busca la variable de entorno 'DATABASE_URL' en Railway de forma automática.
