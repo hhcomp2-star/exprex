@@ -23,7 +23,7 @@ def mostrar_encabezado_exprex():
     with col_titulo:
         # Colocamos un pequeño margen superior en HTML para alinear verticalmente el texto con el logo
         #st.markdown(
-            st.markdown("<h3 style='margin:0; padding:0; line-height:1.1;'>ExpreX Logística</h1>", unsafe_allow_html=True)
+        st.markdown("<h2 style='margin:0; padding:0; line-height:1.1;'>ExpreX Logística</h1>", unsafe_allow_html=True)
             #"<h2 style='margin-top: 25px; margin-bottom: 0px; line-height: 1;'>ExpreX Logística</h2>",
             #"<h2 style='margin-top: 18px; margin-bottom: 0px;'>ExpreX Logística</h2>", 
             #unsafe_allow_html=True
@@ -51,4 +51,4 @@ def mostrar_encabezado_exprex_chofer():
     with col_titulo:
         # Colocamos un pequeño margen superior en HTML para alinear verticalmente el texto con el logo
         #st.markdown(
-            st.markdown("<h4 style='margin:0; padding:0; line-height:1.1;'>ExpreX Logística</h1>", unsafe_allow_html=True)
+        st.markdown("<h4 style='margin:0; padding:0; line-height:1.1;'>ExpreX Logística</h1>", unsafe_allow_html=True)
