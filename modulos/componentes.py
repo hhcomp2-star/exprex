@@ -2,6 +2,7 @@
 import streamlit as st
 import os
 from streamlit.components.v1 import html
+import pandas as pd
 
 def mostrar_encabezado_exprex():
     """
@@ -11,7 +12,7 @@ def mostrar_encabezado_exprex():
     ruta_logo = "favicon.ico"
 
     # Creamos dos columnas: una pequeña para el logo y una grande para el texto
-    col_logo, col_titulo = st.columns([1, 8], vertical_alignment="center")
+    col_logo, col_titulo = st.columns([0.4,0.6], vertical_alignment="center", width="stretch")
 
     with col_logo:
         if os.path.exists(ruta_logo):
@@ -39,7 +40,7 @@ def mostrar_encabezado_exprex_chofer():
     ruta_logo = "favicon.ico"
 
     # Creamos dos columnas: una pequeña para el logo y una grande para el texto
-    col_logo, col_titulo = st.columns([1, 8], vertical_alignment="center")
+    col_logo, col_titulo = st.columns([0.4,0.6], vertical_alignment="center",width="stretch")
 
     with col_logo:
         if os.path.exists(ruta_logo):
