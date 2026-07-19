@@ -7,7 +7,7 @@ def mostrar_encabezado_exprex():
     Renderiza el logo de ExpreX y el título de la aplicación 
     alineados horizontalmente de forma idéntica en cualquier pantalla.
     """
-    ruta_logo = "modulos/logo_exprex_7.png"
+    ruta_logo = "favicon.ico"
 
     # Creamos dos columnas: una pequeña para el logo y una grande para el texto
     col_logo, col_titulo = st.columns([1, 5])
