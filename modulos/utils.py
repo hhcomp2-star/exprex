@@ -126,7 +126,7 @@ def mostrar_evidencia_entrega(ruta_desde_db):
         return
 
     # Ruta raíz en tu Linux Mint
-    ruta_raiz_hector = "/home/hector/exprex"
+    ruta_raiz_hector = "/home/hector/exprex/fotos_entregas"
     
     # Corregido: Validamos si es absoluta o relativa usando os.path directamente
     if not os.path.isabs(ruta_desde_db):
@@ -152,3 +152,38 @@ def mostrar_evidencia_entrega(ruta_desde_db):
             💡 *Si necesitas visualizar o descargar este archivo, por favor solicítalo directamente a la administración.*
             """
         )
+
+# ===========================================================================================================================
+
+#def info_espere():
+    # --- LÓGICA DE INICIAR SESIÓN ---
+#if boton_login or enter_pulsado:  # Ajusta según tus variables
+#    if usuario and contrasena:
+#        
+#        # 1. Creamos un contenedor temporal para el mensaje y la barra
+#        con_progreso = st.container()
+#        
+#        with con_progreso:
+#            st.info("🔄 Espere. . .")
+#            # Inicializamos la barra de progreso en 0%
+#            barra_espera = st.progress(0)
+#            
+#            # Simulamos el avance sutil mientras la base de datos responde
+#            # (Divide los 2 o 3 segundos en pequeños pasos visuales)
+#            import time
+#            for porcentaje in range(0, 101, 10):
+#                time.sleep(0.1) # Brevísimo retraso visual para que la barra se mueva
+#                barra_espera.progress(porcentaje)
+#        
+#        # 2. Aquí ejecutas tu lógica real de conexión a la base de datos
+#        try:
+#            # Tu función existente para validar credenciales:
+#            # usuario_valido = verificar_credenciales(usuario, contrasena)
+#            pass
+            
+#        except Exception as e:
+#            st.error(f"Error de conexión: {e}")
+#            
+#        finally:
+#            # 3. Al terminar todo el proceso, limpiamos la barra para que no se quede fija en pantalla
+#            con_progreso.empty()

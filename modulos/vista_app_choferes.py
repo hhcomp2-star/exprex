@@ -89,9 +89,7 @@ def renderizar_panel_conductor(cedula_conductor):
 
         df_mis_viajes = pd.DataFrame()
         try:
-            # 🛠️ MIGRADO A POSTGRESQL (RAILWAY)
             with obtener_conexion_db() as conexion:
-                # Cambiamos el marcador '?' por '%s' para PostgreSQL
                 sql_viajes = '''
                     SELECT v.id_viaje, v.cliente_solicitante, v.origen, v.destino, v.tipo_viaje,
                            v.distancia_km, v.peso_carga_kg, v.tipo_material, v.estatus_viaje, v.num_pedido,
@@ -249,7 +247,7 @@ def renderizar_panel_conductor(cedula_conductor):
                                 st.error("❌ Hubo un problema al procesar el cierre financiero del flete.")
                     else:
                         st.button("🏁 Confirmar (Requiere Foto)", disabled=True, use_container_width=True)
-
+    #
     # =========================================================================
     # 📌 PESTAÑA 2: REPORTAR COMBUSTIBLE
     # =========================================================================
@@ -257,9 +255,43 @@ def renderizar_panel_conductor(cedula_conductor):
         with tab_combustible:
             st.write("###### ⛽ Registro de Suministro Diésel/Gasolina")
             
+            # --- 1. CARGAR LISTA DE VEHÍCULOS PARA EL SELECTBOX ---
+            lista_opciones_vehiculos = []
+            diccionario_placas = {}
+            
+            try:
+                with obtener_conexion_db() as conexion:
+                    with conexion.cursor() as cursor:
+                        # ⚠️ FILTRO IMPORTANTE: Solo incluimos Aliados o Terceros (excluimos Propios)
+                        cursor.execute("""
+                            SELECT placa, modelo, propietario_tipo 
+                            FROM vehiculos 
+                            WHERE propietario_tipo != 'Propio';
+                        """)
+                        registros_veh = cursor.fetchall()
+                        
+                        for row in registros_veh:
+                            placa_db, modelo_db, tipo_db = row[0], row[1], row[2]
+                            # Creamos un texto descriptivo para el chofer
+                            texto_mostrar = f"{placa_db} - {modelo_db} ({tipo_db})"
+                            
+                            lista_opciones_vehiculos.append(texto_mostrar)
+                            # Guardamos en un diccionario para recuperar la placa limpia luego
+                            diccionario_placas[texto_mostrar] = placa_db
+            except Exception as e:
+                st.error(f"⚠️ No se pudo cargar la lista de vehículos: {e}")
+            
+            # --- 2. CONFIGURACIÓN DEL FORMULARIO ---
             with st.form("form_combustible_chofer", clear_on_submit=True):
-                # Usamos dt.date.today() que es el alias limpio que dejamos arriba
-                placa_vehiculo = st.text_input("Placa:")
+                # Si la base de datos tiene vehículos Aliados/Terceros, muestra el Selectbox
+                if lista_opciones_vehiculos:
+                    vehiculo_seleccionado = st.selectbox("Seleccione el Vehículo:", options=lista_opciones_vehiculos)
+                    placa_vehiculo = diccionario_placas[vehiculo_seleccionado]
+                else:
+                    # Si no hay unidades de terceros registradas, avisamos en vez de abrir campo manual
+                    st.warning("No hay vehículos de Aliados o Terceros registrados que requieran control de combustible.")
+                    placa_vehiculo = None
+                
                 fecha_gasto = st.date_input("📅 Fecha del Suministro:", value=dt.date.today())
                 kilometraje_actual = st.number_input("Kilometraje Actual:", min_value=0, step=10)
                 litros = st.number_input("🧪 Litros Surtidos:", min_value=0.0, step=1.0)
@@ -270,7 +302,9 @@ def renderizar_panel_conductor(cedula_conductor):
                 btn_combustible = st.form_submit_button("💾 Guardar Reporte de Combustible", use_container_width=True)
                 
             if btn_combustible:
-                if litros <= 0 or monto_pagado <= 0:
+                if not placa_vehiculo:
+                    st.error("❌ Error: No se puede guardar el reporte sin un vehículo válido seleccionado.")
+                elif litros <= 0 or monto_pagado <= 0:
                     st.error("❌ Error: Debe ingresar valores válidos de litros y costo monetario.")
                 else:
                     try:
@@ -282,6 +316,7 @@ def renderizar_panel_conductor(cedula_conductor):
                                 ''', (cedula_conductor, str(fecha_gasto), placa_vehiculo, kilometraje_actual, litros, monto_pagado, estacion_servicio, observaciones_comb))
                             conexion.commit()
                         st.success("🎉 ¡Reporte de combustible guardado con éxito!")
+                        st.rerun() # O st.experimental_rerun() según tu versión de Streamlit para limpiar la pantalla
                     except Exception as e:
                         st.error(f"❌ Error al registrar en base de datos: {e}")
 
@@ -426,7 +461,6 @@ def renderizar_panel_conductor(cedula_conductor):
             
             if id_historial_sel:
                 try:
-                    # 🛠️ MIGRADO A POSTGRESQL (RAILWAY)
                     with obtener_conexion_db() as conexion:
                         with conexion.cursor() as cursor:
                             cursor.execute('''
@@ -437,7 +471,7 @@ def renderizar_panel_conductor(cedula_conductor):
                             v_det = cursor.fetchone()
                     #
                     if v_det:
-                        # Corregido: Si es None, le asignamos None directamente sin llamar a Streamlit aquí
+                        # Si es None, le asignamos None directamente sin llamar a Streamlit aquí
                         ruta_foto = v_det[9] 
                         
                         pago_flotante = float(v_det[8]) if v_det[8] is not None else 0.0
