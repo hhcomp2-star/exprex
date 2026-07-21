@@ -34,6 +34,10 @@ def mostrar_modulo_reporte_general():
                 if cursor.description:
                     df_viajes_empresa = pd.DataFrame(filas, columns=[desc[0] for desc in cursor.description])
                     df_viajes_empresa['fecha_dt'] = pd.to_datetime(df_viajes_empresa['fecha_despacho'])
+                    # 💡 CONVERSIÓN A FLOAT PARA EVITAR ERROR CON DECIMAL
+                    for col in ["monto_flete_usd", "descuento_usd", "pago_chofer_usd"]:
+                        if col in df_viajes_empresa.columns:
+                            df_viajes_empresa[col] = df_viajes_empresa[col].astype(float).fillna(0.0)
 
             # B. Leer Combustible
             with conexion.cursor() as cursor:
@@ -42,6 +46,8 @@ def mostrar_modulo_reporte_general():
                 if cursor.description:
                     df_combustible = pd.DataFrame(filas, columns=[desc[0] for desc in cursor.description])
                     df_combustible['fecha_dt'] = pd.to_datetime(df_combustible['fecha'])
+                    if "costo_usd" in df_combustible.columns:
+                        df_combustible["costo_usd"] = df_combustible["costo_usd"].astype(float).fillna(0.0)
 
             # C. Leer Gastos Operativos de Viaje
             with conexion.cursor() as cursor:
@@ -50,6 +56,8 @@ def mostrar_modulo_reporte_general():
                 if cursor.description:
                     df_gastos_op = pd.DataFrame(filas, columns=[desc[0] for desc in cursor.description])
                     df_gastos_op['fecha_dt'] = pd.to_datetime(df_gastos_op['fecha'])
+                    if "monto_usd" in df_gastos_op.columns:
+                        df_gastos_op["monto_usd"] = df_gastos_op["monto_usd"].astype(float).fillna(0.0)
 
             # D. Leer Gastos Generales
             with conexion.cursor() as cursor:
@@ -58,6 +66,8 @@ def mostrar_modulo_reporte_general():
                 if cursor.description:
                     df_gastos_gen = pd.DataFrame(filas, columns=[desc[0] for desc in cursor.description])
                     df_gastos_gen['fecha_dt'] = pd.to_datetime(df_gastos_gen['fecha'])
+                    if "monto_usd" in df_gastos_gen.columns:
+                        df_gastos_gen["monto_usd"] = df_gastos_gen["monto_usd"].astype(float).fillna(0.0)
 
     except Exception as e:
         st.error(f"Error al extraer los datos de PostgreSQL: {e}")
@@ -154,23 +164,27 @@ def mostrar_modulo_reporte_general():
         matriz_resumen["Egresos"] = matriz_egresos["Total Egresos"]
         matriz_resumen["Saldos"] = matriz_resumen["Ingresos"] - matriz_resumen["Egresos"]
         matriz_resumen["Márgenes"] = matriz_resumen.apply(
-            lambda r: f"{(r['Saldos'] / r['Ingresos'] * 100):,.2f} %" if r['Ingresos'] > 0 else "0,00 %", 
+            lambda r: f"{(float(r['Saldos']) / float(r['Ingresos']) * 100.0):,.2f} %" if float(r['Ingresos']) > 0 else "0,00 %", 
             axis=1
         )
 
         matriz_ingresos.loc["Totales"] = matriz_ingresos.sum()
         matriz_egresos.loc["Totales"] = matriz_egresos.sum()
         
+        tot_ing = float(matriz_resumen["Ingresos"].sum())
+        tot_egr = float(matriz_resumen["Egresos"].sum())
+        tot_sal = tot_ing - tot_egr
+
         totales_res = pd.Series({
-            "Ingresos": matriz_resumen["Ingresos"].sum(), 
-            "Egresos": matriz_resumen["Egresos"].sum(), 
-            "Saldos": matriz_resumen["Ingresos"].sum() - matriz_resumen["Egresos"].sum()
+            "Ingresos": tot_ing, 
+            "Egresos": tot_egr, 
+            "Saldos": tot_sal
         }, name="Totales")
-        totales_res["Márgenes"] = f"{(totales_res['Saldos'] / totales_res['Ingresos'] * 100):,.2f} %" if totales_res["Ingresos"] > 0 else "0,00 %"
+        totales_res["Márgenes"] = f"{(tot_sal / tot_ing * 100.0):,.2f} %" if tot_ing > 0 else "0,00 %"
         matriz_resumen.loc["Totales"] = totales_res
 
         def mapear_moneda(df):
-            return df.applymap(lambda x: f"$ {x:,.2f}" if isinstance(x, (int, float)) else x)
+            return df.applymap(lambda x: f"$ {float(x):,.2f}" if isinstance(x, (int, float)) else x)
 
         st.write("##### 🟢 Bloque de Ingresos")
         st.dataframe(mapear_moneda(matriz_ingresos), use_container_width=True)
@@ -211,16 +225,16 @@ def mostrar_modulo_reporte_general():
             t_inicio = pd.to_datetime(fecha_inicio)
             t_fin = pd.to_datetime(fecha_fin) + pd.Timedelta(days=1) - pd.Timedelta(seconds=1)
             
-            ingresos_r = df_viajes_empresa[(df_viajes_empresa['fecha_dt'] >= t_inicio) & (df_viajes_empresa['fecha_dt'] <= t_fin)]['monto_flete_usd'].sum()
-            egreso_desc_r = df_viajes_empresa[(df_viajes_empresa['fecha_dt'] >= t_inicio) & (df_viajes_empresa['fecha_dt'] <= t_fin)]['descuento_usd'].sum()
-            egreso_chof_r = df_viajes_empresa[(df_viajes_empresa['fecha_dt'] >= t_inicio) & (df_viajes_empresa['fecha_dt'] <= t_fin)]['pago_chofer_usd'].sum()
-            egreso_comb_r = df_combustible[(df_combustible['fecha_dt'] >= t_inicio) & (df_combustible['fecha_dt'] <= t_fin)]['costo_usd'].sum()
-            egreso_op_r = df_gastos_op[(df_gastos_op['fecha_dt'] >= t_inicio) & (df_gastos_op['fecha_dt'] <= t_fin)]['monto_usd'].sum()
-            egreso_gen_r = df_gastos_gen[(df_gastos_gen['fecha_dt'] >= t_inicio) & (df_gastos_gen['fecha_dt'] <= t_fin)]['monto_usd'].sum()
+            ingresos_r = float(df_viajes_empresa[(df_viajes_empresa['fecha_dt'] >= t_inicio) & (df_viajes_empresa['fecha_dt'] <= t_fin)]['monto_flete_usd'].sum())
+            egreso_desc_r = float(df_viajes_empresa[(df_viajes_empresa['fecha_dt'] >= t_inicio) & (df_viajes_empresa['fecha_dt'] <= t_fin)]['descuento_usd'].sum())
+            egreso_chof_r = float(df_viajes_empresa[(df_viajes_empresa['fecha_dt'] >= t_inicio) & (df_viajes_empresa['fecha_dt'] <= t_fin)]['pago_chofer_usd'].sum())
+            egreso_comb_r = float(df_combustible[(df_combustible['fecha_dt'] >= t_inicio) & (df_combustible['fecha_dt'] <= t_fin)]['costo_usd'].sum())
+            egreso_op_r = float(df_gastos_op[(df_gastos_op['fecha_dt'] >= t_inicio) & (df_gastos_op['fecha_dt'] <= t_fin)]['monto_usd'].sum())
+            egreso_gen_r = float(df_gastos_gen[(df_gastos_gen['fecha_dt'] >= t_inicio) & (df_gastos_gen['fecha_dt'] <= t_fin)]['monto_usd'].sum())
             
             egresos_tot_r = egreso_chof_r + egreso_comb_r + egreso_op_r + egreso_gen_r + egreso_desc_r
             saldo_r = ingresos_r - egresos_tot_r
-            margen_r = (saldo_r / ingresos_r * 100) if ingresos_r > 0 else 0.0
+            margen_r = (saldo_r / ingresos_r * 100.0) if ingresos_r > 0 else 0.0
             
             df_rango_resumen = pd.DataFrame({
                 "Métricas": ["Monto Total ($)"],
@@ -230,7 +244,7 @@ def mostrar_modulo_reporte_general():
                 "Margen Comercial": [f"{margen_r:,.2f} %"]
             }).set_index("Métricas")
             
-            st.dataframe(df_rango_resumen.applymap(lambda v: f"$ {v:,.2f}" if isinstance(v, (int, float)) else v), use_container_width=True)
+            st.dataframe(df_rango_resumen.applymap(lambda v: f"$ {float(v):,.2f}" if isinstance(v, (int, float)) else v), use_container_width=True)
         else:
             st.error("Error: La fecha de inicio no puede ser mayor que la fecha final.")
 
@@ -240,7 +254,6 @@ def mostrar_modulo_reporte_general():
     with tab_kpis_gerenciales:
         st.write("### 🏛️ Rendimiento de Capital y Análisis Financiero")
         
-        # Selectores dinámicos para el análisis gerencial
         col_g1, col_g2 = st.columns(2)
         with col_g1:
             f_ini_kpi = st.date_input("Período Desde:", date(ano, 1, 1), key="f_ini_t2")
@@ -250,37 +263,35 @@ def mostrar_modulo_reporte_general():
         with st.expander("⚙️ Configuración de Capital Invertido y Patrimonio (Insumos)"):
             c_inv1, c_inv2 = st.columns(2)
             with c_inv1:
-                inversion_inicial = st.number_input("Inversión Inicial Total ($)", value=1000.0, step=100.0)
+                inversion_inicial = float(st.number_input("Inversión Inicial Total ($)", value=1000.0, step=100.0))
             with c_inv2:
-                patrimonio_propio = st.number_input("Capital Propio / Patrimonio ($)", value=1000.0, step=100.0)
+                patrimonio_propio = float(st.number_input("Capital Propio / Patrimonio ($)", value=1000.0, step=100.0))
 
         if f_ini_kpi <= f_fin_kpi:
             t_ini_k = pd.to_datetime(f_ini_kpi)
             t_fin_k = pd.to_datetime(f_fin_kpi) + pd.Timedelta(days=1) - pd.Timedelta(seconds=1)
 
-            # Extraemos montos filtrados por el rango gerencial
-            ing_k = df_viajes_empresa[(df_viajes_empresa['fecha_dt'] >= t_ini_k) & (df_viajes_empresa['fecha_dt'] <= t_fin_k)]['monto_flete_usd'].sum()
-            pago_chof_k = df_viajes_empresa[(df_viajes_empresa['fecha_dt'] >= t_ini_k) & (df_viajes_empresa['fecha_dt'] <= t_fin_k)]['pago_chofer_usd'].sum()
-            comb_k = df_combustible[(df_combustible['fecha_dt'] >= t_ini_k) & (df_combustible['fecha_dt'] <= t_fin_k)]['costo_usd'].sum()
-            g_op_k = df_gastos_op[(df_gastos_op['fecha_dt'] >= t_ini_k) & (df_gastos_op['fecha_dt'] <= t_fin_k)]['monto_usd'].sum()
-            g_gen_k = df_gastos_gen[(df_gastos_gen['fecha_dt'] >= t_ini_k) & (df_gastos_gen['fecha_dt'] <= t_fin_k)]['monto_usd'].sum()
-            desc_k = df_viajes_empresa[(df_viajes_empresa['fecha_dt'] >= t_ini_k) & (df_viajes_empresa['fecha_dt'] <= t_fin_k)]['descuento_usd'].sum()
+            ing_k = float(df_viajes_empresa[(df_viajes_empresa['fecha_dt'] >= t_ini_k) & (df_viajes_empresa['fecha_dt'] <= t_fin_k)]['monto_flete_usd'].sum())
+            pago_chof_k = float(df_viajes_empresa[(df_viajes_empresa['fecha_dt'] >= t_ini_k) & (df_viajes_empresa['fecha_dt'] <= t_fin_k)]['pago_chofer_usd'].sum())
+            comb_k = float(df_combustible[(df_combustible['fecha_dt'] >= t_ini_k) & (df_combustible['fecha_dt'] <= t_fin_k)]['costo_usd'].sum())
+            g_op_k = float(df_gastos_op[(df_gastos_op['fecha_dt'] >= t_ini_k) & (df_gastos_op['fecha_dt'] <= t_fin_k)]['monto_usd'].sum())
+            g_gen_k = float(df_gastos_gen[(df_gastos_gen['fecha_dt'] >= t_ini_k) & (df_gastos_gen['fecha_dt'] <= t_fin_k)]['monto_usd'].sum())
+            desc_k = float(df_viajes_empresa[(df_viajes_empresa['fecha_dt'] >= t_ini_k) & (df_viajes_empresa['fecha_dt'] <= t_fin_k)]['descuento_usd'].sum())
 
-            # Cálculos Gerenciales
+            # Cálculos Gerenciales garantizados como float
             egresos_directos = pago_chof_k + comb_k + g_op_k
             ebitda = ing_k - egresos_directos
             
             utilidad_neta = ebitda - (g_gen_k + desc_k)
             
-            margen_bruto_pct = (ebitda / ing_k * 100) if ing_k > 0 else 0.0
-            margen_neto_pct = (utilidad_neta / ing_k * 100) if ing_k > 0 else 0.0
+            margen_bruto_pct = (ebitda / ing_k * 100.0) if ing_k > 0 else 0.0
+            margen_neto_pct = (utilidad_neta / ing_k * 100.0) if ing_k > 0 else 0.0
             
-            roi_pct = (utilidad_neta / inversion_inicial * 100) if inversion_inicial > 0 else 0.0
-            roe_pct = (utilidad_neta / patrimonio_propio * 100) if patrimonio_propio > 0 else 0.0
+            roi_pct = (utilidad_neta / inversion_inicial * 100.0) if inversion_inicial > 0 else 0.0
+            roe_pct = (utilidad_neta / patrimonio_propio * 100.0) if patrimonio_propio > 0 else 0.0
 
-            # Tiempo de recuperación (Payback)
             dias_evaluados = max((t_fin_k - t_ini_k).days, 1)
-            meses_evaluados = dias_evaluados / 30.0
+            meses_evaluados = float(dias_evaluados) / 30.0
             ganancia_promedio_mensual = utilidad_neta / meses_evaluados if meses_evaluados > 0 else 0.0
             
             meses_payback = (inversion_inicial / ganancia_promedio_mensual) if ganancia_promedio_mensual > 0 else 0.0
@@ -288,7 +299,6 @@ def mostrar_modulo_reporte_general():
             st.markdown("---")
             st.subheader("📈 Cuadro de Mando Financiero")
 
-            # Fila 1: Márgenes y EBITDA
             k1, k2, k3 = st.columns(3)
             k1.metric("EBITDA (Ganancia Operativa)", f"$ {ebitda:,.2f}")
             k2.metric("Margen Bruto", f"{margen_bruto_pct:.2f} %")
@@ -296,7 +306,6 @@ def mostrar_modulo_reporte_general():
 
             st.markdown(" ")
 
-            # Fila 2: ROI, ROE y Payback
             k4, k5, k6 = st.columns(3)
             k4.metric("ROI (Retorno s/ Inversión)", f"{roi_pct:.2f} %")
             k5.metric("ROE (Retorno s/ Patrimonio)", f"{roe_pct:.2f} %")
