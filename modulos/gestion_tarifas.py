@@ -89,7 +89,7 @@ def seccion_tarifas_admin():
     # --- TAB 2: REGISTRAR / MODIFICAR TARIFA CON BOTÓN CALCULAR ---
     with tab2:
         st.subheader("Registrar o Actualizar Tarifa")
-        st.info("Selecciona el cliente y sucursal. Ingresa los kilómetros y presiona 'Calcular' antes de guardar si deseas usar la fórmula estándar.")
+        st.info("Selecciona el cliente y sucursal. Ingresa los kilómetros y presiona 'Calcular' para actualizar los montos según la fórmula.")
         
         # 1. Selección del Cliente
         cliente_sel = st.selectbox("1. Seleccione el Cliente:", list(dict_clientes.keys()), key="cli_form")
@@ -120,31 +120,36 @@ def seccion_tarifas_admin():
             
             nueva_zona = st.text_input("3. Zona / Ciudad de Destino:", placeholder="Ej. Zona Industrial Valencia", key="zona_form").strip()
             
-            # Inicializamos variables en el session_state si no existen
-            if "monto_normal_val" not in st.session_state:
-                st.session_state.monto_normal_val = 25.0
-            if "monto_express_val" not in st.session_state:
-                st.session_state.monto_express_val = 40.0
+            # Inicializamos los valores por defecto en el session_state si aún no existen
+            if "input_normal" not in st.session_state:
+                st.session_state["input_normal"] = 25.00
+            if "input_express" not in st.session_state:
+                st.session_state["input_express"] = 40.00
 
             col_km, col_btn = st.columns([2, 1])
             with col_km:
                 nuevos_km = st.number_input("Distancia Estimada (Km):", min_value=0.1, value=10.0, step=1.0, format="%.1f", key="km_form")
             
             with col_btn:
-                st.write("") # Espaciador para alinear con el input
+                st.write("") # Espaciador vertical para alinear con el input
                 st.write("")
                 if st.button("🧮 Calcular Tarifas", use_container_width=True):
                     # Aplicamos la regla del mínimo logístico de 8 Km
                     km_para_calculo = max(8.0, nuevos_km)
-                    st.session_state.monto_normal_val = km_para_calculo * 2.5
-                    st.session_state.monto_express_val = km_para_calculo * 4.0
-                    st.success(f"Calculado sobre {km_para_calculo:.1f} Km (Normal: ${st.session_state.monto_normal_val:.2f} | Express: ${st.session_state.monto_express_val:.2f})")
+                    
+                    # Asignamos directamente las claves de los inputs en el session_state
+                    st.session_state["input_normal"] = float(km_para_calculo * 2.5)
+                    st.session_state["input_express"] = float(km_para_calculo * 4.0)
+                    
+                    st.toast(f"✅ Calculado sobre {km_para_calculo:.1f} Km")
+                    st.rerun()
 
             col1, col2 = st.columns(2)
             with col1:
-                monto_n = st.number_input("Tarifa Normal ($):", min_value=0.0, value=st.session_state.monto_normal_val, step=1.0, format="%.2f", key="input_normal")
+                # Al estar vinculado con key="input_normal", Streamlit usará el valor asignado en session_state
+                monto_n = st.number_input("Tarifa Normal ($):", min_value=0.0, step=1.0, format="%.2f", key="input_normal")
             with col2:
-                monto_e = st.number_input("Tarifa Express ($):", min_value=0.0, value=st.session_state.monto_express_val, step=1.0, format="%.2f", key="input_express")
+                monto_e = st.number_input("Tarifa Express ($):", min_value=0.0, step=1.0, format="%.2f", key="input_express")
             
             nuevas_observaciones = st.text_area("Notas / Observaciones del tramo:", placeholder="Ej. Requiere pernocta, control de retorno, etc.", key="obs_form")
             
