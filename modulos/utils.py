@@ -22,6 +22,7 @@ def obtener_conexion_db():
     conn = psycopg2.connect(DATABASE_URL, sslmode="require")
     return conn
 
+# =========================================================================================================
 
 def reproducir_alerta_victoria():
     """Inyecta un componente de audio HTML oculto para reproducir la fanfarria

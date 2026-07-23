@@ -323,7 +323,7 @@ def mostrar_interfaz_cliente():
                             # Avanzamos el token del formulario para refrescarlo limpio
                             st.session_state.formulario_token += 1
                             
-                            st.balloons()
+                            #st.balloons()
                             time.sleep(2)
                             st.rerun()
                             
@@ -606,7 +606,10 @@ def mostrar_interfaz_cliente():
         with st.expander("❓ Manual de Uso", expanded=False):
             st.markdown("""
             **Guía Rápida de Uso:**
-            
+
+            *    **Solicitar servicio:** En la pantalla inicial coloque los datos solicitados. Todos son obligatorios, menos las oservaciones.
+            *    **Persona que recibe:** Debe ser la misma solicitante, a menos que se indique el nombre y teléfono de otra persona; para que no qude vacío.
+            *    **Tarifas de traslado:** Consulte el listado. Si el sector para el que se solicita no aparce, consulte al centro de Soporte y rápidamente se le informará.
             * 📊 **Monitoreo:** Revise sus despachos en tiempo real desde la pestaña principal.
             * 📋 **Detalles:** Haga clic en cualquier viaje para ver el peso (`peso_carga_kg`) y número de pedido.
             * 🔍 **Filtro Mensual:** Si busca fletes pasados, recuerde cambiar el mes en el selector superior.
@@ -625,7 +628,7 @@ def mostrar_interfaz_cliente():
         with st.expander("📄 Marco Legal y Políticas", expanded=False):
             st.markdown("""
             ### Contrato de Uso y Condiciones de Servicio
-            *ExpreX Logística — v1.7.8 (2026)*
+            
             
             Al utilizar esta plataforma, usted acepta las siguientes políticas operativas:
             
@@ -650,7 +653,7 @@ def mostrar_interfaz_cliente():
             ---
             *El uso continuado de la aplicación ExpreX implica la aceptación total de estos términos.*
             """)
-
+            
         # --- TÉRMINOS Y CONDICIONES DESDE TERMINOS.TXT ---
         with st.expander("📄 Términos y Condiciones", expanded=False):
             # Mostramos el contenido exacto del archivo txt en pantalla

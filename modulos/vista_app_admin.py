@@ -93,7 +93,7 @@ def mostrar_panel_administrador():
             with col_centro:
                 st.image(ruta_logo, width=220)
         else:
-            st.info("Logo de ExpreX — (Colocar imagen logo_exprex_7.png)")
+            st.info("Logo de ExpreX — (Colocar imagen logo_exprex_10.png)")
             
         st.info("Selecciona una opción en el menú izquierdo para empezar a trabajar.")
         
