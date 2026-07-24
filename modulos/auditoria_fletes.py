@@ -63,7 +63,7 @@ def renderizar_auditoria_fletes_subtab():
         FROM viajes v
         LEFT JOIN clientes c ON v.id_cliente = c.id_cliente
         LEFT JOIN usuarios u ON v.cedula_conductor = u.cedula
-        WHERE DATE(v.fecha_viaje) BETWEEN %s AND %s
+        WHERE DATE(v.fecha_despacho) BETWEEN %s AND %s
     """
     params: list = [fecha_inicio, fecha_fin]
 
