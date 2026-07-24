@@ -53,6 +53,7 @@ def renderizar_auditoria_fletes_subtab():
     query_viajes = """
         SELECT 
             v.id_viaje,
+            v.fecha_despacho,
             c.razon_social AS cliente,
             v.origen,
             v.num_pedido,
