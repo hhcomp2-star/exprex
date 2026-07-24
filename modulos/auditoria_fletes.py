@@ -53,12 +53,12 @@ def renderizar_auditoria_fletes_subtab():
     query_viajes = """
         SELECT 
             v.id_viaje,
+            c.razon_social AS cliente,
             v.origen,
             v.num_pedido,
             v.cedula_conductor,
             u.nombre AS nombre_conductor,
             v.destino,
-            c.razon_social AS cliente,
             v.pago_chofer_usd
         FROM viajes v
         LEFT JOIN clientes c ON v.id_cliente = c.id_cliente
