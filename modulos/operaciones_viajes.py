@@ -16,6 +16,7 @@ if ruta_raiz not in sys.path:
 # Importamos el pool global de Postgres y la pestaña correspondiente
 from modulos.utils import obtener_conexion_db
 from modulos.asignacion_previa import renderizar_pestana_asignar
+from modulos.auditoria_fletes import renderizar_auditoria_fletes_subtab
 
 import streamlit as st
 import pandas as pd
@@ -628,10 +629,11 @@ def mostrar_modulo_operaciones():
     with tab_historial:
         st.subheader("📊 Centro de Consultas y Auditoría de Servicios")
         
-        tab_general, tab_consulta_clientes, tab_individual = st.tabs([
+        tab_general, tab_consulta_clientes, tab_individual, tab_auditoria_fletes = st.tabs([
             "📋 Historial General (Cuentas)", 
             "Auditoría Individual (Detalles Clientes)",
-            "🔍 Auditoría Individual (Detalles Fletes)"
+            "🔍 Auditoría Individual (Detalles Fletes)",
+            "🚚 Auditoría de Fletes (Conductores)"
         ])
         
         # Historial general financiero
@@ -889,6 +891,14 @@ def mostrar_modulo_operaciones():
                         
             except Exception as e:
                 st.error(f"Error al cargar el detalle del flete: {e}")
+
+    # =========================================================================
+    # PESTAÑA 8: CONSULTA DE FLETES 
+    # =========================================================================
+
+    with tab_auditoria_fletes:
+        # Nuevo módulo independiente de auditoría general e individual de fletes
+        renderizar_auditoria_fletes_subtab()
 
     with tab_gestion_tarifas:
         seccion_tarifas_admin()
