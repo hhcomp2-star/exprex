@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from io import BytesIO
 from modulos.utils import obtener_conexion_db
+from typing import Any, List
 
 
 def renderizar_auditoria_fletes_subtab():
@@ -24,9 +25,16 @@ def renderizar_auditoria_fletes_subtab():
             key="aud_fletes_f_fin"
         )
 
-    # Consulta para poblar el filtro de conductores
+    # 2. Carga de usuarios: SOLO conductores activos
     conn = obtener_conexion_db()
-    query_cond = "SELECT cedula, nombre FROM usuarios ORDER BY nombre ASC;"
+    
+    # 🛠️ FILTRO APLICADO: rol == 'conductor' Y activo == 'Sí'
+    query_cond = """
+        SELECT cedula, nombre 
+        FROM usuarios 
+        WHERE LOWER(rol) = 'conductor' AND (activo = 'Sí' OR activo = 'Si' OR activo = 'true')
+        ORDER BY nombre ASC;
+    """
     df_cond = pd.read_sql_query(query_cond, conn)
     
     dict_conductores = {"TODOS": "Todos los conductores (Consulta General)"}
@@ -41,7 +49,7 @@ def renderizar_auditoria_fletes_subtab():
             key="aud_fletes_chofer_select"
         )
 
-    # 2. Consulta SQL con JOINs a clientes y usuarios
+    # 3. Consulta SQL con JOINs a clientes y usuarios
     query_viajes = """
         SELECT 
             v.id_viaje,
@@ -55,9 +63,9 @@ def renderizar_auditoria_fletes_subtab():
         FROM viajes v
         LEFT JOIN clientes c ON v.id_cliente = c.id_cliente
         LEFT JOIN usuarios u ON v.cedula_conductor = u.cedula
-        WHERE DATE(v.fecha_despacho) BETWEEN %s AND %s
+        WHERE DATE(v.fecha_viaje) BETWEEN %s AND %s
     """
-    params = [fecha_inicio, fecha_fin]
+    params: list = [fecha_inicio, fecha_fin]
 
     if seleccion_chofer != "TODOS":
         query_viajes += " AND v.cedula_conductor = %s"
@@ -65,16 +73,16 @@ def renderizar_auditoria_fletes_subtab():
 
     query_viajes += " ORDER BY v.id_viaje DESC;"
 
-    df_fletes = pd.read_sql_query(query_viajes, conn, params=params)
+    df_fletes = pd.read_sql_query(query_viajes, conn, params=tuple(params))
     conn.close()
 
     st.markdown("---")
 
     if df_fletes.empty:
-        st.info("ℹ️ No se encontraron viajes registrados en el período seleccionado.")
+        st.info("ℹ️ No se encontraron viajes registrados para las condiciones seleccionadas.")
         return
 
-    # 3. Métricas acumuladas y descarga
+    # 4. Métricas acumuladas y descarga
     total_viajes = len(df_fletes)
     total_pago_usd = df_fletes["pago_chofer_usd"].sum()
 
@@ -98,7 +106,7 @@ def renderizar_auditoria_fletes_subtab():
             use_container_width=True
         )
 
-    # 4. Formato de nombres de columna para pantalla
+    # 5. Formato de nombres de columna para pantalla
     df_mostrar = df_fletes.rename(
         columns={
             "id_viaje": "ID Viaje",
@@ -112,7 +120,7 @@ def renderizar_auditoria_fletes_subtab():
         }
     )
 
-    # 5. Visualización de tabla
+    # 6. Visualización de la tabla
     st.dataframe(
         df_mostrar.style.format({"Pago Chofer ($USD)": "${:,.2f}"}),
         use_container_width=True,
